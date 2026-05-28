@@ -932,7 +932,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Sidebar toggle (tablet/mobile) -->
-    <button class="hbtn" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Filters" style="display:none;padding:6px 8px;">
+    <button class="hbtn" id="btn-sidebar-toggle" data-action="toggleSidebar" title="Filters" style="display:none;padding:6px 8px;">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         <line x1="2" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -951,32 +951,32 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <span id="entry-count">–</span>
     <div class="sep"></div>
 
-    <button class="hbtn" id="btn-new" onclick="openNewEntry()" title="New entry">
+    <button class="hbtn" id="btn-new" data-action="openNewEntry" title="New entry">
       <svg width="12" height="12" viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       New
     </button>
-    <button class="hbtn" id="btn-import" onclick="triggerImport()">
+    <button class="hbtn" id="btn-import" data-action="triggerImport">
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1v6M3.5 5l2.5 2.5L8.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M1 9h10v1.5H1z" fill="currentColor" opacity=".3"/></svg>
       Import .bib
     </button>
-    <button class="hbtn" id="btn-import-csv" onclick="triggerCsvImport()" title="Import from CSV with column mapping">
+    <button class="hbtn" id="btn-import-csv" data-action="triggerCsvImport" title="Import from CSV with column mapping">
       <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.1"/><line x1="4" y1="5" x2="4" y2="10" stroke="currentColor" stroke-width="1.1"/></svg>
       Import .csv
     </button>
-    <button class="hbtn" id="btn-photo-batch" onclick="openPhotoBatch()" title="Import multiple books from a shelf or stack photo (requires Anthropic API key for Vision)">
+    <button class="hbtn" id="btn-photo-batch" data-action="openPhotoBatch" title="Import multiple books from a shelf or stack photo (requires Anthropic API key for Vision)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
         <circle cx="12" cy="13" r="4"/>
       </svg>
       Photo Batch
     </button>
-        <button class="hbtn primary" id="btn-export" onclick="exportBib()" disabled>
+        <button class="hbtn primary" id="btn-export" data-action="exportBib" disabled>
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 8V2M3.5 4l2.5-2.5L8.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M1 9h10v1.5H1z" fill="currentColor" opacity=".5"/></svg>
       Export .bib
     </button>
 
     <!-- Theme toggle -->
-    <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme">
+    <div class="theme-toggle" id="theme-toggle" data-action="toggleTheme" title="Toggle light/dark theme">
       <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M7 2.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" stroke="currentColor" stroke-width="1.3"/>
         <line x1="7" y1="1" x2="7" y2="0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -996,7 +996,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <!-- TOOLBAR -->
   <div id="toolbar">
     <!-- Save -->
-    <div class="tbtn save-btn" id="tbtn-save" onclick="fsSave()" title="Save to file (Ctrl+S)">
+    <div class="tbtn save-btn" id="tbtn-save" data-action="fsSave" title="Save to file (Ctrl+S)">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/>
         <rect x="5" y="2" width="6" height="5" rx=".5" fill="currentColor" opacity=".5"/>
@@ -1009,7 +1009,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <div class="tb-sep"></div>
 
     <!-- Duplicate -->
-    <div class="tbtn disabled" id="tbtn-dupe" onclick="duplicateEntry()" title="Duplicate selected entry">
+    <div class="tbtn disabled" id="tbtn-dupe" data-action="duplicateEntry" title="Duplicate selected entry">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="5" y="4" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <rect x="3" y="2" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none" opacity=".5"/>
@@ -1022,7 +1022,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <div class="tb-sep"></div>
 
     <!-- Stats -->
-    <div class="tbtn" id="tbtn-stats" onclick="openStatsModal()" title="Library statistics">
+    <div class="tbtn" id="tbtn-stats" data-action="openStatsModal" title="Library statistics">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="9" width="3" height="5" rx=".8" fill="currentColor" opacity=".6"/>
         <rect x="6.5" y="5" width="3" height="9" rx=".8" fill="currentColor" opacity=".8"/>
@@ -1032,7 +1032,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Library Insights -->
-    <div class="tbtn" id="tbtn-insights" onclick="openInsightsModal()" title="Library analytics & insights">
+    <div class="tbtn" id="tbtn-insights" data-action="openInsightsModal" title="Library analytics & insights">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <path d="M8 8 L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -1043,7 +1043,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Find & Replace -->
-    <div class="tbtn" id="tbtn-fnr" onclick="openFnrModal()" title="Find and replace across all entries (Ctrl+H)">
+    <div class="tbtn" id="tbtn-fnr" data-action="openFnrModal" title="Find and replace across all entries (Ctrl+H)">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/>
         <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -1054,7 +1054,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Shortcuts -->
-    <div class="tbtn" id="tbtn-shortcuts" onclick="openShortcutsModal()" title="Keyboard shortcuts">
+    <div class="tbtn" id="tbtn-shortcuts" data-action="openShortcutsModal" title="Keyboard shortcuts">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <rect x="3" y="5.5" width="2" height="2" rx=".4" fill="currentColor" opacity=".7"/>
@@ -1073,7 +1073,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div id="body">
 
     <!-- Sidebar overlay (tablet/mobile) -->
-    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div id="sidebar-overlay" data-action="closeSidebar"></div>
 
     <!-- SIDEBAR -->
     <div id="sidebar">
@@ -1141,8 +1141,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <h2>Open a BibTeX Library</h2>
           <p>Drop a <strong>.bib</strong> or <strong>.csv</strong> file here, or click to browse.<br>Supports large collections — 10,000+ entries.</p>
           <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px;">
-            <button class="hbtn primary" style="display:flex;" onclick="triggerImport()">Browse for .bib file</button>
-            <button class="hbtn" style="display:flex;" onclick="triggerCsvImport()">Import .csv</button>
+            <button class="hbtn primary" style="display:flex;" data-action="triggerImport">Browse for .bib file</button>
+            <button class="hbtn" style="display:flex;" data-action="triggerCsvImport">Import .csv</button>
           </div>
           <div class="drop-zone-sub" id="drop-zone-sub">Or start fresh and add entries manually via DOI lookup</div>
         </div>
@@ -1150,7 +1150,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="autoload-spinner" id="autoload-spinner"></div>
           <span id="autoload-msg">Loading…</span>
         </div>
-        <button class="hbtn" onclick="startFresh()" style="font-size: 14px;">Start with empty library →</button>
+        <button class="hbtn" data-action="startFresh" style="font-size: 14px;">Start with empty library →</button>
       </div>
 
       <!-- List header (hidden until loaded) -->
@@ -1176,7 +1176,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <!-- DETAIL PANEL -->
     <div id="detail">
       <!-- Mobile back button -->
-      <div id="detail-back-btn" onclick="mobileShowList()">
+      <div id="detail-back-btn" data-action="mobileShowList">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -1200,16 +1200,16 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div id="d-year" class="detail-year"></div>
         </div>
         <div class="detail-actions">
-          <div class="detail-btn edit-btn" id="btn-edit" onclick="toggleEdit()">Edit</div>
-          <div class="detail-btn" id="btn-copy-key" onclick="copyKey()">Copy Key</div>
-          <div class="detail-btn" id="btn-copy-bib" onclick="copyBibEntry()">Copy BibTeX</div>
-          <div class="detail-btn danger" id="btn-delete" onclick="deleteEntry()">Delete</div>
+          <div class="detail-btn edit-btn" id="btn-edit" data-action="toggleEdit">Edit</div>
+          <div class="detail-btn" id="btn-copy-key" data-action="copyKey">Copy Key</div>
+          <div class="detail-btn" id="btn-copy-bib" data-action="copyBibEntry">Copy BibTeX</div>
+          <div class="detail-btn danger" id="btn-delete" data-action="deleteEntry">Delete</div>
         </div>
         <div id="detail-fields"></div>
 
         <!-- Raw BibTeX collapsible pane -->
         <div id="bibtex-pane">
-          <div id="bibtex-toggle" onclick="toggleBibtexPane()" title="Show/hide raw BibTeX entry">
+          <div id="bibtex-toggle" data-action="toggleBibtexPane" title="Show/hide raw BibTeX entry">
             <span>
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:5px">
                 <rect x="1" y="2" width="7" height="9" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/>
@@ -1234,17 +1234,17 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
           <!-- Source tabs -->
           <div class="fetch-tabs">
-            <div class="fetch-tab active" id="ftab-doi"    onclick="switchFetchTab('doi')">DOI / CrossRef</div>
-            <div class="fetch-tab"        id="ftab-isbn"   onclick="switchFetchTab('isbn')">ISBN / Open Library</div>
-            <div class="fetch-tab"        id="ftab-title"  onclick="switchFetchTab('title')">Title Search</div>
-            <div class="fetch-tab"        id="ftab-photo"  onclick="switchFetchTab('photo')">📷 Photo</div>
+            <div class="fetch-tab active" id="ftab-doi"    data-action="switchFetchTab" data-arg="doi">DOI / CrossRef</div>
+            <div class="fetch-tab"        id="ftab-isbn"   data-action="switchFetchTab" data-arg="isbn">ISBN / Open Library</div>
+            <div class="fetch-tab"        id="ftab-title"  data-action="switchFetchTab" data-arg="title">Title Search</div>
+            <div class="fetch-tab"        id="ftab-photo"  data-action="switchFetchTab" data-arg="photo">📷 Photo</div>
           </div>
 
           <!-- Panel: DOI → CrossRef -->
           <div class="fetch-panel active" id="fpanel-doi">
             <div class="fetch-row">
               <input class="form-input mono" id="doi-input" placeholder="10.xxxx/xxxxx or https://doi.org/…" autocomplete="off">
-              <button class="fetch-btn crossref" id="doi-btn" onclick="doiLookup()">CrossRef ↗</button>
+              <button class="fetch-btn crossref" id="doi-btn" data-action="doiLookup">CrossRef ↗</button>
             </div>
             <div class="fetch-status" id="doi-status"></div>
           </div>
@@ -1253,15 +1253,15 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="fetch-panel" id="fpanel-isbn">
             <div class="fetch-row">
               <input class="form-input mono" id="isbn-input" placeholder="978-x-xxx-xxxxx-x or 10-digit" autocomplete="off">
-              <button class="fetch-btn openlibrary" id="isbn-ol-btn" onclick="isbnLookup()">Open Library ↗</button>
+              <button class="fetch-btn openlibrary" id="isbn-ol-btn" data-action="isbnLookup">Open Library ↗</button>
             </div>
             <div class="fetch-row" style="margin-top:2px;">
               <span class="fetch-hint" style="flex:1">Google Books used as fallback if Open Library returns sparse data</span>
-              <button class="fetch-btn googlebooks" id="isbn-gb-btn" onclick="googleBooksIsbnLookup()">Google Books ↗</button>
+              <button class="fetch-btn googlebooks" id="isbn-gb-btn" data-action="googleBooksIsbnLookup">Google Books ↗</button>
             </div>
             <div class="fetch-row" style="margin-top:2px;">
               <span class="fetch-hint" style="flex:1">Can't find it? Search WorldCat directly</span>
-              <button class="fetch-btn worldcat" onclick="openWorldCat()">WorldCat ↗</button>
+              <button class="fetch-btn worldcat" data-action="openWorldCat">WorldCat ↗</button>
             </div>
             <div class="fetch-status" id="isbn-status"></div>
           </div>
@@ -1273,9 +1273,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
               <input class="form-input" id="author-search-input" placeholder="Author surname" autocomplete="off" style="flex:1">
             </div>
             <div class="fetch-row" style="margin-top:4px;">
-              <button class="fetch-btn openlibrary" id="title-ol-btn" onclick="titleSearchOpenLibrary()">Open Library ↗</button>
-              <button class="fetch-btn googlebooks" id="title-gb-btn" onclick="titleSearchGoogleBooks()">Google Books ↗</button>
-              <button class="fetch-btn worldcat" onclick="openWorldCat()">WorldCat ↗</button>
+              <button class="fetch-btn openlibrary" id="title-ol-btn" data-action="titleSearchOpenLibrary">Open Library ↗</button>
+              <button class="fetch-btn googlebooks" id="title-gb-btn" data-action="titleSearchGoogleBooks">Google Books ↗</button>
+              <button class="fetch-btn worldcat" data-action="openWorldCat">WorldCat ↗</button>
             </div>
             <div class="fetch-status" id="title-status"></div>
           </div>
@@ -1435,7 +1435,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-group" style="margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
               <label class="form-label" for="jel-search" style="margin:0;">JEL Codes</label>
-              <button class="suggest-btn" id="jel-suggest-btn" onclick="suggestJEL()" title="Auto-suggest top 3 JEL codes from AEA classification tree">
+              <button class="suggest-btn" id="jel-suggest-btn" data-action="suggestJEL" title="Auto-suggest top 3 JEL codes from AEA classification tree">
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1a5 5 0 100 10A5 5 0 006 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v2.5L7.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 Fetch JEL
               </button>
@@ -1460,7 +1460,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-group">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
               <label class="form-label" for="f-lcc" style="margin:0;">Library of Congress Classification</label>
-              <button class="suggest-btn" id="loc-suggest-btn" onclick="suggestLOC()" title="Auto-suggest LOC class (books only)">
+              <button class="suggest-btn" id="loc-suggest-btn" data-action="suggestLOC" title="Auto-suggest LOC class (books only)">
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1a5 5 0 100 10A5 5 0 006 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v2.5L7.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 Suggest LOC
               </button>
@@ -1502,8 +1502,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         </div>
 
         <div class="form-save-row">
-          <div class="form-save-btn btn-cancel" onclick="cancelEdit()">Cancel</div>
-          <div class="form-save-btn btn-save" onclick="saveEntry()">Save Entry</div>
+          <div class="form-save-btn btn-cancel" data-action="cancelEdit">Cancel</div>
+          <div class="form-save-btn btn-save" data-action="saveEntry">Save Entry</div>
         </div>
       </div>
     </div>
@@ -1512,7 +1512,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
   <!-- MOBILE BOTTOM NAV -->
   <nav id="mobile-nav">
-    <div class="mobile-nav-btn active" id="mnav-list" onclick="mobileShowList()">
+    <div class="mobile-nav-btn active" id="mnav-list" data-action="mobileShowList">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <line x1="4" y1="6" x2="16" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="4" y1="10" x2="16" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1520,7 +1520,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       List
     </div>
-    <div class="mobile-nav-btn" id="mnav-detail" onclick="mobileShowDetail()">
+    <div class="mobile-nav-btn" id="mnav-detail" data-action="mobileShowDetail">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <line x1="6" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -1529,7 +1529,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       Entry
     </div>
-    <div class="mobile-nav-btn" id="mnav-new" onclick="openNewEntry()">
+    <div class="mobile-nav-btn" id="mnav-new" data-action="openNewEntry">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <line x1="10" y1="6.5" x2="10" y2="13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1537,13 +1537,13 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       New
     </div>
-    <div class="mobile-nav-btn" id="mnav-filters" onclick="toggleSidebar()">
+    <div class="mobile-nav-btn" id="mnav-filters" data-action="toggleSidebar">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <path d="M3 5h14M6 10h8M9 15h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       Filters
     </div>
-    <div class="mobile-nav-btn" id="mnav-save" onclick="fsSave()">
+    <div class="mobile-nav-btn" id="mnav-save" data-action="fsSave">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <rect x="3" y="3" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <rect x="6.5" y="3" width="7" height="5.5" rx=".5" fill="currentColor" opacity=".5"/>
@@ -1551,7 +1551,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       Save
     </div>
-    <div class="mobile-nav-btn" id="mnav-photo" onclick="openPhotoBatch()">
+    <div class="mobile-nav-btn" id="mnav-photo" data-action="openPhotoBatch">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 15.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 1 15.5V7a1.5 1.5 0 0 1 1.5-1.5h3L7 3.5h6l1.5 2H18.5A1.5 1.5 0 0 1 20 7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <circle cx="10" cy="11" r="2.8" stroke="currentColor" stroke-width="1.4" fill="none"/>
@@ -1569,7 +1569,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:700px;max-height:88vh;">
     <div class="modal-header">
       <div class="modal-title">Photo Batch Import</div>
-      <div class="modal-close" onclick="closeModal('photo-batch-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="photo-batch-modal">✕</div>
     </div>
     <div class="modal-body" id="photo-batch-body" style="gap:10px;">
 
@@ -1635,8 +1635,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
     </div>
     <div class="modal-footer" id="photo-batch-footer">
-      <button class="modal-btn secondary" onclick="pbClose()">Close</button>
-      <button class="modal-btn primary" id="pb-action-btn" style="display:none;" onclick=""></button>
+      <button class="modal-btn secondary" data-action="pbClose">Close</button>
+      <button class="modal-btn primary" id="pb-action-btn" style="display:none;"></button>
     </div>
   </div>
 </div>
@@ -1646,7 +1646,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:420px;">
     <div class="modal-header">
       <div class="modal-title">Anthropic API Key</div>
-      <div class="modal-close" onclick="closeModal('apikey-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="apikey-modal">✕</div>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text2);line-height:1.55;margin:0 0 10px;">
@@ -1663,8 +1663,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div id="apikey-status" style="font-size:12px;color:var(--text3);min-height:16px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('apikey-modal')">Cancel</button>
-      <button class="modal-btn primary" onclick="saveApiKey()">Save for Session</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="apikey-modal">Cancel</button>
+      <button class="modal-btn primary" data-action="saveApiKey">Save for Session</button>
     </div>
   </div>
 </div>
@@ -1673,22 +1673,22 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:440px;">
     <div class="modal-header">
       <div class="modal-title">Quick Add via DOI</div>
-      <div class="modal-close" onclick="closeModal('doi-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="doi-modal">✕</div>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label" for="modal-doi">Paste DOI</label>
         <div class="doi-lookup-row">
           <input class="form-input mono" id="modal-doi" placeholder="10.xxxx/xxxxx or full https://doi.org/…" style="font-size: 14px;">
-          <button class="doi-lookup-btn" id="modal-doi-btn" onclick="modalDoiLookup()">Fetch ↗</button>
+          <button class="doi-lookup-btn" id="modal-doi-btn" data-action="modalDoiLookup">Fetch ↗</button>
         </div>
       </div>
       <div id="modal-doi-result" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; font-size: 15px; line-height:1.6; color:var(--text2);">
       </div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('doi-modal')">Cancel</button>
-      <button class="modal-btn primary" id="modal-doi-save" onclick="saveDoiEntry()" disabled>Add to Library</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="doi-modal">Cancel</button>
+      <button class="modal-btn primary" id="modal-doi-save" data-action="saveDoiEntry" disabled>Add to Library</button>
     </div>
   </div>
 </div>
@@ -1698,13 +1698,13 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:560px;">
     <div class="modal-header">
       <div class="modal-title">Library Statistics</div>
-      <div class="modal-close" onclick="closeModal('stats-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="stats-modal">✕</div>
     </div>
     <div class="modal-body" id="stats-modal-body">
       <div style="color:var(--text3);font-family:var(--mono);font-size:12px;">Loading…</div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('stats-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="stats-modal">Close</button>
     </div>
   </div>
 </div>
@@ -1714,7 +1714,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:500px;">
     <div class="modal-header">
       <div class="modal-title">Find &amp; Replace</div>
-      <div class="modal-close" onclick="closeModal('fnr-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="fnr-modal">✕</div>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -1753,9 +1753,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div class="fnr-results" id="fnr-results"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="fnrPreview()">Preview matches</button>
-      <button class="modal-btn secondary" onclick="closeModal('fnr-modal')">Cancel</button>
-      <button class="modal-btn primary" id="fnr-replace-btn" onclick="fnrExecute()" disabled>Replace all</button>
+      <button class="modal-btn secondary" data-action="fnrPreview">Preview matches</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="fnr-modal">Cancel</button>
+      <button class="modal-btn primary" id="fnr-replace-btn" data-action="fnrExecute" disabled>Replace all</button>
     </div>
   </div>
 </div>
@@ -1765,7 +1765,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:460px;">
     <div class="modal-header">
       <div class="modal-title">Keyboard Shortcuts</div>
-      <div class="modal-close" onclick="closeModal('shortcuts-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="shortcuts-modal">✕</div>
     </div>
     <div class="modal-body">
       <table class="shortcut-table">
@@ -1790,7 +1790,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </table>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('shortcuts-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="shortcuts-modal">Close</button>
     </div>
   </div>
 </div>
@@ -1800,14 +1800,14 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:660px;max-height:85vh;">
     <div class="modal-header">
       <div class="modal-title">Map CSV Columns → BibTeX Fields</div>
-      <div class="modal-close" onclick="closeModal('csv-mapping-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="csv-mapping-modal">✕</div>
     </div>
     <div class="modal-body" id="csv-mapping-body" style="max-height:calc(85vh - 130px);overflow-y:auto;">
     </div>
     <div class="modal-footer">
       <span id="csv-import-count" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-right:auto;"></span>
-      <button class="modal-btn secondary" onclick="closeModal('csv-mapping-modal')">Cancel</button>
-      <button class="modal-btn primary" id="csv-import-btn" onclick="executeCsvImport()">Import</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="csv-mapping-modal">Cancel</button>
+      <button class="modal-btn primary" id="csv-import-btn" data-action="executeCsvImport">Import</button>
     </div>
   </div>
 </div>
@@ -1834,16 +1834,16 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:640px;max-height:85vh;">
     <div class="modal-header">
       <div class="modal-title">Library Insights</div>
-      <div class="modal-close" onclick="closeModal('insights-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="insights-modal">✕</div>
     </div>
     <div class="modal-body" style="max-height:calc(85vh - 120px);overflow-y:auto;">
       <div class="insights-tabs">
-        <div class="insights-tab active" onclick="switchInsightsTab('overview')">Overview</div>
-        <div class="insights-tab" onclick="switchInsightsTab('age')">Citation Age</div>
-        <div class="insights-tab" onclick="switchInsightsTab('authors')">Authors</div>
-        <div class="insights-tab" onclick="switchInsightsTab('venues')">Venues</div>
-        <div class="insights-tab" onclick="switchInsightsTab('jel')">JEL Coverage</div>
-        <div class="insights-tab" onclick="switchInsightsTab('quality')">Quality</div>
+        <div class="insights-tab active" data-action="switchInsightsTab" data-arg="overview">Overview</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="age">Citation Age</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="authors">Authors</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="venues">Venues</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="jel">JEL Coverage</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="quality">Quality</div>
       </div>
       <div id="insights-panel-overview"  class="insights-panel active"></div>
       <div id="insights-panel-age"       class="insights-panel"></div>
@@ -1853,7 +1853,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div id="insights-panel-quality"   class="insights-panel"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('insights-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="insights-modal">Close</button>
     </div>
   </div>
 </div>
@@ -2274,6 +2274,18 @@ function applyLatexAccents(s) {
 function stripBraces(s) {
   if (!s) return '';
   return applyLatexAccents(s).replace(/[{}\\]/g, '');
+}
+
+// L18: 1→a, 2→b, … 26→z, 27→aa, 28→ab, …
+// Wraps to multi-letter suffixes after z instead of producing {|}~ glyphs.
+function autoSuffix(n) {
+  let s = '';
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(97 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
 
 function typeClass(t) {
@@ -2876,7 +2888,7 @@ function renderJelList(q) {
         <span style="color:var(--text2);font-size: 12.5px;">${desc}</span>
       </div>`;
     }
-    return `<div class="jel-item${sel}" onclick="toggleJel('${code}')">
+    return `<div class="jel-item${sel}" data-action="toggleJel" data-arg="${code}">
       <span class="jel-code">${code}</span>
       <span class="jel-desc">${desc}</span>
     </div>`;
@@ -2896,7 +2908,7 @@ function toggleJel(code) {
 function renderJelSelected() {
   const wrap = document.getElementById('jel-selected-tags');
   wrap.innerHTML = editJel.map(c=>`
-    <span class="jel-sel-tag" onclick="toggleJel('${c}')" title="Click to remove">
+    <span class="jel-sel-tag" data-action="toggleJel" data-arg="${c}" title="Click to remove">
       ${c} <span style="opacity:.6">×</span>
     </span>`).join('');
 }
@@ -3886,7 +3898,7 @@ function saveDoiEntry() {
   // Check for duplicate key (O(1) via entryByKey)
   let key = pendingDoiEntry.key;
   let suffix = 1;
-  while (entryByKey.has(key)) { key = pendingDoiEntry.key + String.fromCharCode(96+suffix); suffix++; }
+  while (entryByKey.has(key)) { key = pendingDoiEntry.key + autoSuffix(suffix); suffix++; }
   pendingDoiEntry.key = key;
   entries.push(pendingDoiEntry);
   entryByKey.set(key, pendingDoiEntry);
@@ -3974,7 +3986,7 @@ async function autoLoadLibrary() {
     spinner.style.display = 'none';
     statusEl.classList.add('ok');
     msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span>`;
-    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" data-action="triggerImport">load a different file</span>`;
 
     toast(`Auto-loaded ${entries.length.toLocaleString()} entries from ${label}.`, 'success');
 
@@ -4110,7 +4122,7 @@ function duplicateEntry() {
   let newKey = baseKey + 'b';
   let suffix = 2;
   while (entryByKey.has(newKey)) {
-    newKey = baseKey + String.fromCharCode(96 + suffix);
+    newKey = baseKey + autoSuffix(suffix);
     suffix++;
   }
 
@@ -4847,6 +4859,18 @@ function onTypeChange() {
 function init() {
   initTheme();
 
+  // L17: Global delegated click handler for data-action attributes — replaces
+  // inline onclick="…" on toolbar buttons and other UI elements (CSP-friendly).
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const action = el.dataset.action;
+    const arg = el.dataset.arg;
+    const fn = window[action];
+    if (typeof fn !== 'function') return;
+    try { arg !== undefined ? fn(arg) : fn(); } catch (err) { console.error(err); }
+  });
+
   // Search debounce
   let debounce;
   document.getElementById('search').addEventListener('input', e => {
@@ -5066,31 +5090,75 @@ function csvAutoDetect(header) {
   return CSV_AUTO_MAP[norm] || null;
 }
 
+// RFC 4180-compliant CSV parser: handles quoted fields with embedded newlines
+// (L16) and preserves quoted-field whitespace (L19 — only unquoted fields are trimmed).
 function parseCSVText(text) {
-  const CRLF = text.includes('\r\n') ? '\r\n' : '\n';
-  const lines = text.split(CRLF).filter(l => l.trim());
-  if (lines.length < 2) throw new Error('CSV needs a header row and at least one data row');
-  const headers = parseCSVLine(lines[0]);
+  const records = parseCSVRecords(text);
+  if (records.length < 2) throw new Error('CSV needs a header row and at least one data row');
+  const headers = records[0];
   const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseCSVLine(lines[i]);
-    if (vals.every(v => !v.trim())) continue; // skip blank rows
+  for (let i = 1; i < records.length; i++) {
+    const vals = records[i];
+    if (vals.every(v => !v || !String(v).trim())) continue; // skip blank rows
     const obj = {};
-    headers.forEach((h,idx) => { obj[h] = (vals[idx] || '').trim(); });
+    headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
     rows.push(obj);
   }
   return { headers, rows };
 }
 
-function parseCSVLine(line) {
-  const out = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i], nx = line[i+1];
-    if (c === '"') { if (inQ && nx === '"') { cur += '"'; i++; } else { inQ = !inQ; } }
-    else if (c === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
-    else { cur += c; }
+// Single-pass character-state parser over the whole text — handles \n / \r\n
+// line endings, embedded newlines inside double-quoted fields, and "" escapes.
+// Returns an array of records (each a string[]). Unquoted fields are trimmed;
+// quoted fields keep their inner whitespace verbatim.
+function parseCSVRecords(text) {
+  const out = [];
+  let row = [];
+  let cur = '';
+  let inQ = false;       // inside quoted field
+  let fieldQuoted = false; // current field started with a quote
+  let fieldStarted = false;
+  const n = text.length;
+
+  const pushField = () => {
+    row.push(fieldQuoted ? cur : cur.trim());
+    cur = '';
+    fieldQuoted = false;
+    fieldStarted = false;
+  };
+  const pushRow = () => {
+    pushField();
+    out.push(row);
+    row = [];
+  };
+
+  for (let i = 0; i < n; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }   // escaped quote
+        else { inQ = false; }                            // end of quoted field
+      } else {
+        cur += c;
+      }
+      continue;
+    }
+    if (c === '"' && !fieldStarted) {
+      inQ = true;
+      fieldQuoted = true;
+      fieldStarted = true;
+      continue;
+    }
+    if (c === ',') { pushField(); continue; }
+    if (c === '\r') { /* skip — handled with \n */ continue; }
+    if (c === '\n') { pushRow(); continue; }
+    cur += c;
+    fieldStarted = true;
   }
-  out.push(cur.trim());
+  // Flush trailing field/row
+  if (cur.length > 0 || row.length > 0 || fieldQuoted) {
+    pushRow();
+  }
   return out;
 }
 
@@ -5185,7 +5253,7 @@ function executeCsvImport() {
     entry.fields.datasource = 'csv-import';
 
     let k = entry.key; let suf = 1;
-    while (takenKeys.has(k)) { k = entry.key + String.fromCharCode(96 + suf); suf++; }
+    while (takenKeys.has(k)) { k = entry.key + autoSuffix(suf); suf++; }
     if (k !== entry.key) renamedKeys.push(k);
     entry.key = k;
     takenKeys.add(k);
