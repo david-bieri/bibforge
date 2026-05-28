@@ -3049,18 +3049,23 @@ async function pbRunLookups() {
   resultsList.innerHTML = '';
   const progressLabel = document.getElementById('pb-progress-label');
 
-  for (let i = 0; i < queue.length; i++) {
-    const b = queue[i];
-    progressLabel.textContent = `[${i+1}/${queue.length}] Looking up "${b.title.replace(/\?$/, '')}"…`;
-
+  // Pre-render rows so the queue is visible up-front
+  for (const b of queue) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:4px;font-size:12px;';
     row.innerHTML = `<span style="color:var(--text3);min-width:22px;font-variant-numeric:tabular-nums;">${b.index}.</span>
                      <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(b.title)}">${escHtml(b.title.replace(/\?$/,''))}</span>
-                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ looking up…</span>`;
+                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ queued</span>`;
     resultsList.appendChild(row);
-    resultsList.scrollTop = resultsList.scrollHeight;
+  }
+  resultsList.scrollTop = resultsList.scrollHeight;
 
+  // M13: parallelize lookups in chunks of 3 (max 3 concurrent, respects API rate limits)
+  const CHUNK = 3;
+  let done = 0;
+  const lookupOne = async (b) => {
+    const statusCell = document.getElementById(`pb-row-st-${b.index}`);
+    if (statusCell) { statusCell.textContent = '⏳ looking up…'; statusCell.style.color = 'var(--text3)'; }
     try {
       let entry = null;
       if (b.isbn && /\d{9,13}/.test(b.isbn)) {
@@ -3069,24 +3074,27 @@ async function pbRunLookups() {
       if (!entry && b.title) {
         entry = await pbFetchByTitle(b.title.replace(/\?$/,''), b.author);
       }
-
-      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
       if (entry) {
         if (pbState.shelfTag) entry.shelf = pbState.shelfTag;
         b.entry  = entry;
         b.status = 'ok';
-        statusCell.textContent = '✓ ' + (entry.key || '');
-        statusCell.style.color = 'var(--green)';
+        if (statusCell) { statusCell.textContent = '✓ ' + (entry.key || ''); statusCell.style.color = 'var(--green)'; }
       } else {
         b.status = 'notfound';
-        statusCell.textContent = '⚠ not found';
-        statusCell.style.color = 'var(--amber)';
+        if (statusCell) { statusCell.textContent = '⚠ not found'; statusCell.style.color = 'var(--amber)'; }
       }
     } catch(err) {
       b.status = 'error';
-      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
       if (statusCell) { statusCell.textContent = '✗ error'; statusCell.style.color = 'var(--red)'; }
+    } finally {
+      done++;
+      progressLabel.textContent = `[${done}/${queue.length}] Looking up…`;
     }
+  };
+
+  for (let i = 0; i < queue.length; i += CHUNK) {
+    const slice = queue.slice(i, i + CHUNK);
+    await Promise.all(slice.map(lookupOne));
   }
 
   // Summary
@@ -3126,14 +3134,14 @@ async function pbRunLookups() {
 async function pbFetchByIsbn(isbn) {
   // Open Library first
   try {
-    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
     const d = await r.json();
     const key = `ISBN:${isbn}`;
     if (d[key]) return pbParseOLData(d[key], isbn, 'photo-barcode');
   } catch {}
   // Google Books fallback
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, isbn, 'photo-barcode');
   } catch {}
@@ -3144,13 +3152,13 @@ async function pbFetchByTitle(title, author) {
   const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
   // Open Library title+author search
   try {
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?q=${q}&limit=1`);
     const d = await r.json();
     if (d.docs?.length) return pbParseOLSearch(d.docs[0], 'photo-vision');
   } catch {}
   // Google Books title search
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, null, 'photo-vision');
   } catch {}
@@ -3312,7 +3320,7 @@ async function callVisionAPI(imageFile, prompt) {
     r.readAsDataURL(imageFile);
   });
   const mediaType = imageFile.type || 'image/jpeg';
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -3538,7 +3546,7 @@ async function doiLookup() {
 }
 
 async function crossRefLookup(doi) {
-  const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+  const r = await fetchWithTimeout(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
   if (!r.ok) throw new Error('Not found in CrossRef');
   const j = await r.json();
   return j.message;
@@ -3612,7 +3620,7 @@ async function isbnLookup() {
 }
 
 async function openLibraryByIsbn(isbn) {
-  const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+  const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
   if (!r.ok) throw new Error('Open Library HTTP ' + r.status);
   const j = await r.json();
   const key = Object.keys(j)[0];
@@ -3659,7 +3667,7 @@ async function googleBooksIsbnLookup() {
 }
 
 async function googleBooksIsbn(isbn) {
-  const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
+  const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
   if (!r.ok) throw new Error('Google Books HTTP '+r.status);
   const j = await r.json();
   if (!j.items?.length) throw new Error('Not found in Google Books');
@@ -3675,7 +3683,7 @@ async function titleSearchOpenLibrary() {
   setFetchStatus('title','Searching Open Library…');
   try {
     const q = encodeURIComponent(title + (author?' '+author:''));
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
     if (!r.ok) throw new Error('Open Library HTTP '+r.status);
     const j = await r.json();
     if (!j.docs?.length) throw new Error('No results');
@@ -3713,7 +3721,7 @@ async function titleSearchGoogleBooks() {
   setFetchStatus('title','Searching Google Books…');
   try {
     const q = 'intitle:'+encodeURIComponent(title)+(author?'+inauthor:'+encodeURIComponent(author):'');
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     if (!r.ok) throw new Error('Google Books HTTP '+r.status);
     const j = await r.json();
     if (!j.items?.length) throw new Error('No results');
@@ -3890,7 +3898,7 @@ async function autoLoadLibrary() {
   pb.style.display = 'block'; pb.style.width = '20%';
 
   try {
-    const response = await fetch(path, { cache: 'no-cache' });
+    const response = await fetchWithTimeout(path, { cache: 'no-cache' });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} — file not found at ${path}`);
@@ -4311,6 +4319,28 @@ function exportBib() {
 // ════════════════════════════════════════════════════
 //  MODAL HELPERS
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  FETCH WITH TIMEOUT (M12) — 15s default, AbortController-based.
+// ════════════════════════════════════════════════════
+const FETCH_TIMEOUT_MS = 15000;
+async function fetchWithTimeout(input, init = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: ctl.signal });
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      toast('Request timed out. Please try again.', 'error');
+      const e = new Error('Request timed out');
+      e.name = 'TimeoutError';
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function openModal(id) {
   const el = document.getElementById(id);
   el.classList.add('open');
@@ -4502,7 +4532,7 @@ async function fetchAeaTree() {
 
   setStatus('fetching AEA tree…');
   try {
-    const r = await fetch('https://www.aeaweb.org/econlit/classificationTree.xml', {
+    const r = await fetchWithTimeout('https://www.aeaweb.org/econlit/classificationTree.xml', {
       mode: 'cors', cache: 'force-cache'
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -4510,6 +4540,8 @@ async function fetchAeaTree() {
     const parsed = parseAeaXml(xml);
     if (parsed.length < 20) throw new Error('parse failed — too few codes');
     aeaJelTree = parsed;
+    // M10: pre-tokenize descriptions once at load time, not per-suggestion-click
+    aeaJelTree.forEach(c => { c._tokens = tokenize(c.description); });
     setStatus(`AEA tree: ${parsed.length} codes`, 'var(--green)');
     return aeaJelTree;
   } catch(err) {
@@ -4517,7 +4549,7 @@ async function fetchAeaTree() {
     setStatus('using built-in (CORS blocked AEA)', 'var(--amber)');
     aeaJelTree = JEL
       .filter(([code]) => code.length >= 2)                  // skip single-letter headers
-      .map(([code, description]) => ({ code, description }));
+      .map(([code, description]) => ({ code, description, _tokens: tokenize(description) }));
     return aeaJelTree;
   }
 }
@@ -4553,11 +4585,12 @@ async function suggestJEL() {
   try {
     const tree = await fetchAeaTree();
 
-    // Score every leaf code (length ≥ 2) — prefer 3-char specificity
+    // Score every leaf code (length ≥ 2) — prefer 3-char specificity.
+    // Use cached _tokens (computed once at tree load) instead of re-tokenizing per click.
     const scored = tree
       .filter(c => c.code.length >= 2)
       .map(c => {
-        const descTokens = tokenize(c.description);
+        const descTokens = c._tokens || tokenize(c.description);
         let score = scoreDesc(descTokens, corpusTokenSet, corpusTokens);
         // Bonus for 3-char specificity
         if (c.code.length === 3) score *= 1.3;
@@ -4664,6 +4697,12 @@ const LOC_EXTENDED = [
 
 const BOOK_TYPES = new Set(['book','inbook','incollection','inproceedings','proceedings']);
 
+// M10: pre-tokenize LOC descriptions+hints once at module load so suggestLOC()
+// doesn't re-tokenize on every click.
+const LOC_TOKENIZED = LOC_EXTENDED.map(([code, desc, hints]) => ({
+  code, desc, _tokens: tokenize(desc + ' ' + (hints || ''))
+}));
+
 function suggestLOC() {
   const btn = document.getElementById('loc-suggest-btn');
   const statusEl = document.getElementById('loc-suggest-status');
@@ -4696,9 +4735,8 @@ function suggestLOC() {
   const corpusTokens = tokenize(corpus);
   const corpusTokenSet = new Set(corpusTokens);
 
-  const scored = LOC_EXTENDED.map(([code, desc, hints]) => {
-    const descTokens = tokenize(desc + ' ' + (hints||''));
-    let score = scoreDesc(descTokens, corpusTokenSet, corpusTokens);
+  const scored = LOC_TOKENIZED.map(({ code, desc, _tokens }) => {
+    let score = scoreDesc(_tokens, corpusTokenSet, corpusTokens);
     // Prefer 2-letter subclasses over single-letter broad classes
     if (code.length === 2) score *= 1.4;
     return { code, desc, score };
