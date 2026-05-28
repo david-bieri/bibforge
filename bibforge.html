@@ -4669,7 +4669,12 @@ function init() {
     }
   });
 
-  console.log('BibForge v1.3 — Keyboard shortcuts:\n  Ctrl/Cmd+D  Quick add via DOI\n  Ctrl/Cmd+F  Focus search\n  Ctrl/Cmd+S  Save to file (or save entry while editing)\n  Ctrl/Cmd+H  Find & Replace\n  ↑↓          Navigate entries\n  Escape      Cancel / close\n\n  Toolbar: Save · Duplicate · Stats · Insights · Find & Replace · Shortcuts\n  Import: .bib file or .csv (with column mapping dialog)\n\n  Auto-load path: ' + (BIBFORGE_CONFIG.autoLoad || 'disabled — set BIBFORGE_CONFIG.autoLoad to enable'));
+  // Responsive sidebar + mobile panels
+  initResponsive();
+
+  // Attempt auto-load from configured repo path
+  autoLoadLibrary();
+}
 
 // ════════════════════════════════════════════════════
 //  CSV IMPORT — PARSE + COLUMN MAPPING
@@ -5096,14 +5101,6 @@ function renderInsightsQuality() {
       <div class="ins-bar-count">${pct}%</div>
     </div>`).join('')}
   `;
-}
-
-
-  // Responsive sidebar + mobile panels
-  initResponsive();
-
-  // Attempt auto-load from configured repo path
-  autoLoadLibrary();
 }
 
 // ════════════════════════════════════════════════════
