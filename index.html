@@ -170,7 +170,7 @@
     <a href="#changelog" class="hide-sm">Changelog</a>
   </div>
   <div class="topbar-right">
-    <span class="topbar-version">v1.2</span>
+    <span class="topbar-version">v1.3</span>
     <a href="https://github.com/davidbieri/bibforge" class="hide-sm">GitHub ↗</a>
     <a href="bibforge.html" class="topbar-launch">⟶ Launch</a>
   </div>
@@ -285,7 +285,7 @@
       <div class="fc-accent teal"></div>
       <div class="fc-tag">Provenance</div>
       <div class="fc-title"><code style="font-size:15px">datasource</code> Field</div>
-      <div class="fc-body">Every API-fetched entry is stamped: <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">crossref</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">openlibrary</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">googlebooks</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">csv-import</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">archive-visit</code>, or <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">manual</code>. Written to the <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">.bib</code> file. Filterable in sidebar.</div>
+      <div class="fc-body">Every API-fetched entry is stamped: <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">crossref</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">openlibrary</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">googlebooks</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">csv-import</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">archive-visit</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-barcode</code>, <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-vision</code>, or <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">manual</code>. Written to the <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">.bib</code> file. Filterable in sidebar.</div>
     </div>
 
     <div class="feature-card">
@@ -307,6 +307,21 @@
       <div class="fc-tag">Archival Research · v1.2</div>
       <div class="fc-title">Chicago NB Citation <span class="fc-new">v1.2</span></div>
       <div class="fc-body">Collapsible Chicago Notes-Bibliography citation pane in the detail view — mirrors the Raw BibTeX pane. Covers all entry types including the <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">@archival</code> format (item · date range · collection · box/folder · repository). Copy-to-clipboard in one click.</div>
+    </div>
+
+
+    <div class="feature-card">
+      <div class="fc-accent teal"></div>
+      <div class="fc-tag">Photo Import · v1.3</div>
+      <div class="fc-title">Photo Import — Single Book <span class="fc-new">v1.3</span></div>
+      <div class="fc-body">New 📷 Photo fetch tab in the entry edit form. Drop a cover or spine photo — if a barcode is visible, the ISBN is extracted client-side via ZXing (no API key, no server). No barcode? Claude Vision reads the cover text and routes to title or ISBN search automatically. Entries stamped <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-barcode</code> or <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-vision</code> depending on path.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="fc-accent amber"></div>
+      <div class="fc-tag">Photo Import · v1.3</div>
+      <div class="fc-title">Photo Batch Import <span class="fc-new">v1.3</span></div>
+      <div class="fc-body">Photograph an entire shelf or fanned stack and import every visible spine in one pass. Claude Vision extracts the full inventory; a three-stage modal lets you review and correct misread titles before lookup runs. Resolved entries go straight to the library or download as <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-import.bib</code>. Unresolved entries export as <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-batch-residuals.txt</code> for manual follow-up. API key stored in session memory only — never persisted.</div>
     </div>
 
   </div>
@@ -381,6 +396,17 @@
   <div class="reveal">
 
     <div class="changelog-entry">
+      <div class="changelog-ver">v1.3 <span class="changelog-date">· May 2026</span></div>
+      <ul class="changelog-list">
+        <li>Photo Import — single book: 📷 Photo fetch tab in the edit form; ZXing barcode decoding client-side (no API key), Claude Vision fallback for cover/spine text recognition</li>
+        <li>Photo Batch Import: shelf/stack photo → Vision spine extraction → editable review table → batch API lookup → add to library or download <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-import.bib</code></li>
+        <li>API Key modal for Anthropic key — session-only (<code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">sessionStorage</code>), never persisted, never transmitted except to <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">api.anthropic.com</code></li>
+        <li>New <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">datasource</code> values: <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-barcode</code> and <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">photo-vision</code> — appear in sidebar filter and Library Insights breakdown</li>
+        <li>Mobile: <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">capture="environment"</code> on photo inputs (direct camera on iOS/Android); Photo Batch in bottom nav; responsive batch review table (Author + ISBN columns hidden on narrow viewports)</li>
+      </ul>
+    </div>
+
+    <div class="changelog-entry">
       <div class="changelog-ver">v1.2 <span class="changelog-date">· April 2026</span></div>
       <ul class="changelog-list">
         <li>Archival Search fetch tab — Internet Archive API with clickable result cards and field-apply; DPLA and Europeana link-outs</li>
@@ -447,6 +473,7 @@
     <div class="note-card"><h4>Virtual Scrolling</h4><p>Fixed row height of 76px. Only visible rows are in the DOM at any time. Switching filters or running a search recalculates the virtual list instantly — rendering cost is proportional to viewport size, not library size.</p></div>
     <div class="note-card"><h4>JEL Engine</h4><p>Keyword-scoring against the full AEA EconLit tree fetched on first use and cached for the session. Specificity bonus for 3-character leaf codes. Falls back to an embedded table of 200+ codes if CORS-blocked.</p></div>
     <div class="note-card"><h4>Archival Research</h4><p>The <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">@archival</code> type writes standard BibTeX — custom fields like <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">repository</code> and <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">date_range</code> are preserved in round-trips through Zotero and JabRef. Internet Archive fetch uses the public <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">advancedsearch.php</code> endpoint — no API key required.</p></div>
+    <div class="note-card"><h4>Photo Import</h4><p>Barcode decoding via ZXing (<code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">@zxing/browser@0.1.4</code>, CDN) runs entirely in-browser — no API key or server needed for ISBN photos. Spine text recognition uses the Anthropic Messages API with a base64-encoded image; the user-supplied key lives in <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">sessionStorage</code> only. No library data is ever transmitted.</p></div>
     <div class="note-card"><h4>Deployment</h4><p>Rename to <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">bibforge.html</code>, push to GitHub, enable Pages. No <code style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">_config.yml</code>, no Jekyll, no build pipeline. File size stays under GitHub Pages' 100 MB limit at any realistic library size.</p></div>
   </div>
 </section>
@@ -455,7 +482,7 @@
 
 <footer>
   <div class="f-left">
-    <strong>BibForge</strong> · v1.2 · April 2026<br>
+    <strong>BibForge</strong> · v1.3 · May 2026<br>
     <a href="https://www.david-bieri.com">David Bieri</a> · Virginia Tech SPIA<br>
     Academic library inventory workflow
   </div>
