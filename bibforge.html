@@ -31,7 +31,7 @@
   --border2:  #3a3630;
   --text:     #e4ddd0;
   --text2:    #a8a090;
-  --text3:    #6a6358;
+  --text3:    #8a8278;
   --amber:    #c8973a;
   --amber-dim:#7a5a1e;
   --blue:     #5b8fa8;
@@ -1970,9 +1970,43 @@ let selected   = null; // currently selected entry key
 let editing    = null; // entry being edited (copy)
 let isNew      = false;
 let editJel    = [];   // JEL codes being edited
+let entryByKey = new Map(); // key -> entry, kept in sync with entries
 
 const ROW_H = 76;
-let scrollTop  = 0;
+
+// Memoization helpers: lazily compute and cache a flat searchable string per
+// entry; invalidated on edit/delete/import via rebuildEntryIndex().
+function getEntrySearchable(e) {
+  if (e._searchable) return e._searchable;
+  const parts = [
+    e.key, e.type,
+    fmt(e,'title'), fmt(e,'author'), fmt(e,'editor'),
+    fmt(e,'year'), fmt(e,'journal'), fmt(e,'booktitle'),
+    fmt(e,'publisher'), fmt(e,'doi'), fmt(e,'jel'),
+    fmt(e,'keywords'), fmt(e,'datasource')
+  ];
+  return (e._searchable = parts.join(' ').toLowerCase());
+}
+
+function invalidateEntryCache(e) {
+  if (!e) return;
+  e._searchable = null;
+  e._sortAuthor = null;
+  e._sortTitle  = null;
+  e._sortYear   = null;
+}
+
+function rebuildEntryIndex() {
+  entryByKey = new Map();
+  for (const e of entries) {
+    entryByKey.set(e.key, e);
+    invalidateEntryCache(e);
+  }
+}
+
+function findEntry(key) {
+  return entryByKey.get(key) || entries.find(e => e.key === key);
+}
 
 // ════════════════════════════════════════════════════
 //  BIBTEX PARSER
@@ -2199,11 +2233,8 @@ let filterYearTo   = '';
 let filterDatasource = '';
 let sortMode   = 'year-desc';
 
-function getSearchable(e) {
-  return [e.key, fmt(e,'title'), fmt(e,'author'), fmt(e,'year'),
-    fmt(e,'journal'), fmt(e,'booktitle'), fmt(e,'doi'), fmt(e,'jel'),
-    fmt(e,'keywords'), fmt(e,'datasource')].join(' ').toLowerCase();
-}
+// Thin shim — actual memoization lives in getEntrySearchable (top of file).
+function getSearchable(e) { return getEntrySearchable(e); }
 
 function applyFilters() {
   filterYearFrom   = document.getElementById('year-from').value;
@@ -2239,13 +2270,18 @@ function runFilter() {
 
 function applySort(rerun = true) {
   sortMode = document.getElementById('sort-select').value;
+  // Sort key cache — populated once per entry per session and invalidated on mutation.
+  const getSortAuthor = e => e._sortAuthor || (e._sortAuthor = (getAuthors(e) || '').toLowerCase());
+  const getSortTitle  = e => e._sortTitle  || (e._sortTitle  = (stripBraces(fmt(e,'title')) || '').toLowerCase());
+  const getSortYear   = e => (e._sortYear != null ? e._sortYear : (e._sortYear = parseInt(fmt(e,'year')) || 0));
+
   filtered.sort((a, b) => {
     switch(sortMode) {
-      case 'year-desc': return (parseInt(fmt(b,'year'))||0) - (parseInt(fmt(a,'year'))||0);
-      case 'year-asc':  return (parseInt(fmt(a,'year'))||0) - (parseInt(fmt(b,'year'))||0);
-      case 'author-asc':  return getAuthors(a).localeCompare(getAuthors(b));
-      case 'author-desc': return getAuthors(b).localeCompare(getAuthors(a));
-      case 'title-asc':   return stripBraces(fmt(a,'title')).localeCompare(stripBraces(fmt(b,'title')));
+      case 'year-desc': return getSortYear(b) - getSortYear(a);
+      case 'year-asc':  return getSortYear(a) - getSortYear(b);
+      case 'author-asc':  return getSortAuthor(a).localeCompare(getSortAuthor(b));
+      case 'author-desc': return getSortAuthor(b).localeCompare(getSortAuthor(a));
+      case 'title-asc':   return getSortTitle(a).localeCompare(getSortTitle(b));
       case 'key-asc':     return a.key.localeCompare(b.key);
       default: return 0;
     }
@@ -2379,7 +2415,7 @@ function setTypeFilter(val) {
 function selectEntry(key) {
   if (editing) return;
   selected = key;
-  const e = entries.find(x => x.key === key);
+  const e = findEntry(key);
   if (!e) return;
   // Enable duplicate button
   const dupeBtn = document.getElementById('tbtn-dupe');
@@ -2488,7 +2524,7 @@ function showDetail(e) {
 //  EDIT FORM
 // ════════════════════════════════════════════════════
 function toggleEdit() {
-  const e = entries.find(x => x.key === selected);
+  const e = findEntry(selected);
   if (!e) return;
   openEditForm(e, false);
 }
@@ -2564,7 +2600,7 @@ function cancelEdit() {
   document.getElementById('edit-form').style.display = 'none';
   document.getElementById('btn-edit').classList.remove('editing');
   if (selected) {
-    const e = entries.find(x=>x.key===selected);
+    const e = findEntry(selected);
     if (e) { document.getElementById('detail-content').style.display='flex'; showDetail(e); }
   } else {
     document.getElementById('detail-empty').style.display='flex';
@@ -2582,7 +2618,7 @@ function saveEntry() {
   if (!title) { toast('Title is required.', 'error'); return; }
 
   // Check for duplicate key on new entry
-  if (isNew && entries.find(x=>x.key===key)) {
+  if (isNew && findEntry(key)) {
     toast('Citation key already exists.', 'error'); return;
   }
 
@@ -2615,11 +2651,17 @@ function saveEntry() {
   for (const k in fields) { if (!fields[k]) delete fields[k]; }
 
   if (isNew) {
-    entries.unshift({ type, key, fields });
+    const newE = { type, key, fields };
+    entries.push(newE);
+    entryByKey.set(key, newE);
     toast('Entry added.', 'success');
   } else {
     const idx = entries.findIndex(x=>x.key===selected);
-    entries[idx] = { type, key, fields };
+    const updated = { type, key, fields };
+    entries[idx] = updated;
+    if (selected !== key) entryByKey.delete(selected);
+    entryByKey.set(key, updated);
+    invalidateEntryCache(updated);
     toast('Entry saved.', 'success');
   }
 
@@ -2633,7 +2675,7 @@ function saveEntry() {
   runFilter();
 
   // Show detail
-  const saved = entries.find(x=>x.key===key);
+  const saved = findEntry(key);
   document.getElementById('detail-content').style.display='flex';
   showDetail(saved);
 }
@@ -2641,7 +2683,9 @@ function saveEntry() {
 function deleteEntry() {
   if (!selected) return;
   if (!confirm('Delete this entry? This cannot be undone.')) return;
-  entries = entries.filter(x=>x.key!==selected);
+  const idx = entries.findIndex(x=>x.key===selected);
+  if (idx >= 0) entries.splice(idx, 1);
+  entryByKey.delete(selected);
   selected = null;
   document.getElementById('detail-empty').style.display='flex';
   document.getElementById('detail-content').style.display='none';
@@ -2657,7 +2701,7 @@ function copyKey() {
 
 function copyBibEntry() {
   if (!selected) return;
-  const e = entries.find(x=>x.key===selected);
+  const e = findEntry(selected);
   if (!e) return;
   navigator.clipboard.writeText(entryToBibTeX(e)).then(()=>toast('BibTeX entry copied.','success'));
 }
@@ -2677,7 +2721,7 @@ function toggleBibtexPane() {
 }
 
 function renderBibtexPane() {
-  const e = entries.find(x => x.key === selected);
+  const e = findEntry(selected);
   if (!e) return;
   const raw = entryToBibTeX(e);
   document.getElementById('bibtex-raw-content').innerHTML = highlightBibtex(raw);
@@ -2794,11 +2838,12 @@ function toggleTheme() {
   document.documentElement.classList.toggle('light', !isDark);
   document.getElementById('theme-icon-dark').style.display  = isDark ? '' : 'none';
   document.getElementById('theme-icon-light').style.display = isDark ? 'none' : '';
-  try { localStorage.setItem('jrl-theme', isDark ? 'dark' : 'light'); } catch(e){}
+  try { localStorage.setItem('bf-theme', isDark ? 'dark' : 'light'); } catch(e){}
 }
 function initTheme() {
   try {
-    const saved = localStorage.getItem('jrl-theme');
+    // Read the new key, falling back to the legacy key for users upgrading.
+    const saved = localStorage.getItem('bf-theme') || localStorage.getItem('jrl-theme');
     if (saved === 'light') { isDark = false; document.documentElement.classList.add('light');
       document.getElementById('theme-icon-dark').style.display = 'none';
       document.getElementById('theme-icon-light').style.display = ''; }
@@ -2887,7 +2932,7 @@ async function pbProcessImage(file) {
         ...b,
         title:   (b.title  || '').trim(),
         author:  (b.author || '').trim(),
-        isbn:    b.isbn && b.isbn !== 'null' ? b.isbn.replace(/\D/g,'') : '',
+        isbn:    b.isbn && b.isbn !== 'null' ? b.isbn.replace(/[^0-9Xx]/g,'').toUpperCase() : '',
         include: true,
         status:  'pending',
         entry:   null
@@ -2906,8 +2951,10 @@ function pbShowReview() {
   const reviewEl = document.getElementById('pb-stage-review');
   reviewEl.style.display = 'flex';
 
-  // Thumbnail
-  document.getElementById('pb-thumb').src = URL.createObjectURL(pbState.file);
+  // Thumbnail (revoke previous blob URL to avoid leaks across imports)
+  const thumb = document.getElementById('pb-thumb');
+  if (thumb.src && thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
+  thumb.src = URL.createObjectURL(pbState.file);
 
   // Build review table
   const tbody = document.getElementById('pb-review-tbody');
@@ -3144,7 +3191,10 @@ function pbParseOLSearch(doc, src) {
 // ── Output Helpers ─────────────────────────────────────────────────────────
 
 function pbAddToLibrary(newEntries) {
-  for (const e of newEntries) entries.push(e);
+  for (const e of newEntries) {
+    entries.push(e);
+    entryByKey.set(e.key, e);
+  }
   closeModal('photo-batch-modal');
   buildSidebarFilters();
   runFilter();
@@ -3313,7 +3363,8 @@ async function processSinglePhoto(file) {
   const thumb       = document.getElementById('photo-thumb');
   const resultText  = document.getElementById('photo-result-text');
 
-  // Show thumbnail immediately
+  // Show thumbnail immediately (revoke previous blob URL to avoid leaks)
+  if (thumb.src && thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
   thumb.src = URL.createObjectURL(file);
   previewRow.style.display = 'flex';
   statusEl.style.color = 'var(--text3)';
@@ -3743,18 +3794,19 @@ function saveDoiEntry() {
   if (!pendingDoiEntry) return;
   // Stamp provenance
   pendingDoiEntry.fields.datasource = 'crossref';
-  // Check for duplicate key
+  // Check for duplicate key (O(1) via entryByKey)
   let key = pendingDoiEntry.key;
   let suffix = 1;
-  while (entries.find(x=>x.key===key)) { key = pendingDoiEntry.key + String.fromCharCode(96+suffix); suffix++; }
+  while (entryByKey.has(key)) { key = pendingDoiEntry.key + String.fromCharCode(96+suffix); suffix++; }
   pendingDoiEntry.key = key;
-  entries.unshift(pendingDoiEntry);
+  entries.push(pendingDoiEntry);
+  entryByKey.set(key, pendingDoiEntry);
   selected = key;
   closeModal('doi-modal');
   document.getElementById('btn-export').disabled = false;
   buildSidebarFilters();
   runFilter();
-  const e = entries.find(x=>x.key===key);
+  const e = findEntry(key);
   document.getElementById('detail-content').style.display='flex';
   document.getElementById('detail-empty').style.display='none';
   showDetail(e);
@@ -3820,6 +3872,7 @@ async function autoLoadLibrary() {
     pb.style.width = '80%';
 
     entries = parseBibTeX(text);
+    rebuildEntryIndex();
     pb.style.width = '95%';
 
     selected = null; editing = null;
@@ -3870,6 +3923,7 @@ function handleFileImport(input) {
     pb.style.width = '70%';
     try {
       entries = parseBibTeX(ev.target.result);
+      rebuildEntryIndex();
       pb.style.width = '90%';
       selected = null; editing = null;
       showLibrary();
@@ -3955,16 +4009,18 @@ async function fsSave() {
 // ════════════════════════════════════════════════════
 function duplicateEntry() {
   if (!selected) return;
-  const src = entries.find(x => x.key === selected);
+  const src = findEntry(selected);
   if (!src) return;
 
   // Deep copy fields, generate a new unique key
-  const newFields = JSON.parse(JSON.stringify(src.fields));
+  const newFields = (typeof structuredClone === 'function')
+    ? structuredClone(src.fields)
+    : JSON.parse(JSON.stringify(src.fields));
   let baseKey = src.key;
   // Strip any existing suffix letter (e.g. smithb → smith)
   let newKey = baseKey + 'b';
   let suffix = 2;
-  while (entries.find(x => x.key === newKey)) {
+  while (entryByKey.has(newKey)) {
     newKey = baseKey + String.fromCharCode(96 + suffix);
     suffix++;
   }
@@ -3973,6 +4029,7 @@ function duplicateEntry() {
   // Insert right after the original
   const idx = entries.findIndex(x => x.key === selected);
   entries.splice(idx + 1, 0, dupe);
+  entryByKey.set(newKey, dupe);
 
   selected = newKey;
   document.getElementById('btn-export').disabled = false;
@@ -3980,7 +4037,7 @@ function duplicateEntry() {
   runFilter();
 
   // Open in edit mode so user can immediately adjust the key/fields
-  const inserted = entries.find(x => x.key === newKey);
+  const inserted = findEntry(newKey);
   document.getElementById('detail-content').style.display = 'flex';
   document.getElementById('detail-empty').style.display = 'none';
   showDetail(inserted);
@@ -4161,6 +4218,10 @@ function fnrExecute() {
   if (!find) return;
 
   const needle = caseSen ? find : find.toLowerCase();
+  // Build regex once (M3) — was previously rebuilt per matched field.
+  const re = whole
+    ? null
+    : new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), caseSen?'g':'gi');
   let count = 0;
 
   entries.forEach(e => {
@@ -4168,6 +4229,7 @@ function fnrExecute() {
       ? Object.keys(e.fields)
       : field === 'journal' ? ['journal','booktitle'] : [field];
 
+    let mutated = false;
     fieldsToCheck.forEach(f => {
       const val = e.fields[f];
       if (!val) return;
@@ -4176,14 +4238,14 @@ function fnrExecute() {
         if (whole) {
           e.fields[f] = replace;
         } else {
-          // Case-insensitive replace
-          const re = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), caseSen?'g':'gi');
           e.fields[f] = val.replace(re, replace);
         }
         if (!e.fields[f]) delete e.fields[f];
         count++;
+        mutated = true;
       }
     });
+    if (mutated) invalidateEntryCache(e);
   });
 
   const resultsEl = document.getElementById('fnr-results');
@@ -4193,7 +4255,7 @@ function fnrExecute() {
 
   buildSidebarFilters();
   runFilter();
-  if (selected) { const e = entries.find(x=>x.key===selected); if(e) showDetail(e); }
+  if (selected) { const e = findEntry(selected); if(e) showDetail(e); }
   document.getElementById('btn-export').disabled = false;
   toast(`Find & Replace: ${count} field${count===1?'':'s'} updated.`, 'success');
   setToolbarStatus(`Find & Replace: ${count} fields updated`, 'ok');
@@ -4213,6 +4275,7 @@ function exportBib() {
   a.href = URL.createObjectURL(blob);
   a.download = 'library_export.bib';
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast(`Exported ${entries.length.toLocaleString()} entries.`,'success');
 }
 
@@ -4879,6 +4942,8 @@ function executeCsvImport() {
   if (!csvParsedData) return;
   const { rows, mapping } = csvParsedData;
   const added = []; const renamedKeys = [];
+  // Pre-seed taken keys from existing library for O(1) collision lookup.
+  const takenKeys = new Set(entryByKey.keys());
 
   rows.forEach((row, idx) => {
     const entry = { type: 'article', key: '', fields: {} };
@@ -4901,14 +4966,17 @@ function executeCsvImport() {
     entry.fields.datasource = 'csv-import';
 
     let k = entry.key; let suf = 1;
-    const allKeys = new Set([...entries.map(e=>e.key), ...added.map(e=>e.key)]);
-    while (allKeys.has(k)) { k = entry.key + String.fromCharCode(96 + suf); suf++; }
+    while (takenKeys.has(k)) { k = entry.key + String.fromCharCode(96 + suf); suf++; }
     if (k !== entry.key) renamedKeys.push(k);
     entry.key = k;
+    takenKeys.add(k);
     added.push(entry);
   });
 
-  entries.unshift(...added);
+  for (const e of added) {
+    entries.push(e);
+    entryByKey.set(e.key, e);
+  }
   closeModal('csv-mapping-modal');
   csvParsedData = null;
   document.getElementById('btn-export').disabled = false;
