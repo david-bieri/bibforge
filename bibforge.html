@@ -87,6 +87,15 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Keyboard focus outline for elements promoted to role=button (a11y). */
+[role="button"]:focus-visible,
+.filter-opt:focus-visible,
+.suggest-chip:focus-visible,
+.loc-suggest-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
 html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--serif); font-size: 16px; line-height: 1.5; }
 
 /* ── SCROLLBAR ── */
@@ -4667,6 +4676,23 @@ function init() {
     if (doiEl && doiEl.dataset.doi) {
       window.open('https://doi.org/' + encodeURI(doiEl.dataset.doi), '_blank', 'noopener,noreferrer');
     }
+  });
+
+  // Promote clickable divs to keyboard-accessible buttons. Adding role/tabindex
+  // makes them focusable; a global Enter/Space handler synthesizes a click.
+  const a11yButtonSelector = '.tbtn, .detail-btn, .modal-close, .mobile-nav-btn, .fetch-tab, #bibtex-toggle, #theme-toggle, #detail-back-btn';
+  document.querySelectorAll(a11yButtonSelector).forEach(el => {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'SELECT') return;
+    if (t.getAttribute('role') !== 'button') return;
+    e.preventDefault();
+    t.click();
   });
 
   // Delegated click + keyboard on sidebar type filters
