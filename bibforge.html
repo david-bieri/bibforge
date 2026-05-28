@@ -31,7 +31,7 @@
   --border2:  #3a3630;
   --text:     #e4ddd0;
   --text2:    #a8a090;
-  --text3:    #6a6358;
+  --text3:    #8a8278;
   --amber:    #c8973a;
   --amber-dim:#7a5a1e;
   --blue:     #5b8fa8;
@@ -86,6 +86,15 @@
 .toast, .modal, .modal-overlay, .entry-row, .filter-opt, #progress-bar { transition: none !important; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Keyboard focus outline for elements promoted to role=button (a11y). */
+[role="button"]:focus-visible,
+.filter-opt:focus-visible,
+.suggest-chip:focus-visible,
+.loc-suggest-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
 
 html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--serif); font-size: 16px; line-height: 1.5; }
 
@@ -923,7 +932,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Sidebar toggle (tablet/mobile) -->
-    <button class="hbtn" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Filters" style="display:none;padding:6px 8px;">
+    <button class="hbtn" id="btn-sidebar-toggle" data-action="toggleSidebar" title="Filters" style="display:none;padding:6px 8px;">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         <line x1="2" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -936,38 +945,38 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
         <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
       </svg>
-      <input id="search" type="text" placeholder="Search title, author, key, DOI…" autocomplete="off">
+      <input id="search" type="text" placeholder="Search title, author, key, DOI…" autocomplete="off" aria-label="Search library">
     </div>
 
     <span id="entry-count">–</span>
     <div class="sep"></div>
 
-    <button class="hbtn" id="btn-new" onclick="openNewEntry()" title="New entry">
+    <button class="hbtn" id="btn-new" data-action="openNewEntry" title="New entry">
       <svg width="12" height="12" viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       New
     </button>
-    <button class="hbtn" id="btn-import" onclick="triggerImport()">
+    <button class="hbtn" id="btn-import" data-action="triggerImport">
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1v6M3.5 5l2.5 2.5L8.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M1 9h10v1.5H1z" fill="currentColor" opacity=".3"/></svg>
       Import .bib
     </button>
-    <button class="hbtn" id="btn-import-csv" onclick="triggerCsvImport()" title="Import from CSV with column mapping">
+    <button class="hbtn" id="btn-import-csv" data-action="triggerCsvImport" title="Import from CSV with column mapping">
       <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.1"/><line x1="4" y1="5" x2="4" y2="10" stroke="currentColor" stroke-width="1.1"/></svg>
       Import .csv
     </button>
-    <button class="hbtn" id="btn-photo-batch" onclick="openPhotoBatch()" title="Import multiple books from a shelf or stack photo (requires Anthropic API key for Vision)">
+    <button class="hbtn" id="btn-photo-batch" data-action="openPhotoBatch" title="Import multiple books from a shelf or stack photo (requires Anthropic API key for Vision)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
         <circle cx="12" cy="13" r="4"/>
       </svg>
       Photo Batch
     </button>
-        <button class="hbtn primary" id="btn-export" onclick="exportBib()" disabled>
+        <button class="hbtn primary" id="btn-export" data-action="exportBib" disabled>
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 8V2M3.5 4l2.5-2.5L8.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M1 9h10v1.5H1z" fill="currentColor" opacity=".5"/></svg>
       Export .bib
     </button>
 
     <!-- Theme toggle -->
-    <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme">
+    <div class="theme-toggle" id="theme-toggle" data-action="toggleTheme" title="Toggle light/dark theme">
       <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M7 2.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" stroke="currentColor" stroke-width="1.3"/>
         <line x1="7" y1="1" x2="7" y2="0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -987,7 +996,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <!-- TOOLBAR -->
   <div id="toolbar">
     <!-- Save -->
-    <div class="tbtn save-btn" id="tbtn-save" onclick="fsSave()" title="Save to file (Ctrl+S)">
+    <div class="tbtn save-btn" id="tbtn-save" data-action="fsSave" title="Save to file (Ctrl+S)">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/>
         <rect x="5" y="2" width="6" height="5" rx=".5" fill="currentColor" opacity=".5"/>
@@ -1000,7 +1009,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <div class="tb-sep"></div>
 
     <!-- Duplicate -->
-    <div class="tbtn disabled" id="tbtn-dupe" onclick="duplicateEntry()" title="Duplicate selected entry">
+    <div class="tbtn disabled" id="tbtn-dupe" data-action="duplicateEntry" title="Duplicate selected entry">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="5" y="4" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <rect x="3" y="2" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none" opacity=".5"/>
@@ -1013,7 +1022,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <div class="tb-sep"></div>
 
     <!-- Stats -->
-    <div class="tbtn" id="tbtn-stats" onclick="openStatsModal()" title="Library statistics">
+    <div class="tbtn" id="tbtn-stats" data-action="openStatsModal" title="Library statistics">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="9" width="3" height="5" rx=".8" fill="currentColor" opacity=".6"/>
         <rect x="6.5" y="5" width="3" height="9" rx=".8" fill="currentColor" opacity=".8"/>
@@ -1023,7 +1032,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Library Insights -->
-    <div class="tbtn" id="tbtn-insights" onclick="openInsightsModal()" title="Library analytics & insights">
+    <div class="tbtn" id="tbtn-insights" data-action="openInsightsModal" title="Library analytics & insights">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <path d="M8 8 L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -1034,7 +1043,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Find & Replace -->
-    <div class="tbtn" id="tbtn-fnr" onclick="openFnrModal()" title="Find and replace across all entries (Ctrl+H)">
+    <div class="tbtn" id="tbtn-fnr" data-action="openFnrModal" title="Find and replace across all entries (Ctrl+H)">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/>
         <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -1045,7 +1054,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     </div>
 
     <!-- Shortcuts -->
-    <div class="tbtn" id="tbtn-shortcuts" onclick="openShortcutsModal()" title="Keyboard shortcuts">
+    <div class="tbtn" id="tbtn-shortcuts" data-action="openShortcutsModal" title="Keyboard shortcuts">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <rect x="3" y="5.5" width="2" height="2" rx=".4" fill="currentColor" opacity=".7"/>
@@ -1064,7 +1073,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div id="body">
 
     <!-- Sidebar overlay (tablet/mobile) -->
-    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div id="sidebar-overlay" data-action="closeSidebar"></div>
 
     <!-- SIDEBAR -->
     <div id="sidebar">
@@ -1076,9 +1085,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div class="sb-section">
         <div class="sb-title">Year Range</div>
         <div class="range-wrap">
-          <input type="number" class="range-input" id="year-from" placeholder="1900" min="1400" max="2100" oninput="applyFilters()">
+          <input type="number" class="range-input" id="year-from" placeholder="1900" min="1400" max="2100" oninput="debouncedApplyFilters()">
           <span class="range-sep">–</span>
-          <input type="number" class="range-input" id="year-to" placeholder="2026" min="1400" max="2100" oninput="applyFilters()">
+          <input type="number" class="range-input" id="year-to" placeholder="2026" min="1400" max="2100" oninput="debouncedApplyFilters()">
         </div>
       </div>
 
@@ -1132,8 +1141,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <h2>Open a BibTeX Library</h2>
           <p>Drop a <strong>.bib</strong> or <strong>.csv</strong> file here, or click to browse.<br>Supports large collections — 10,000+ entries.</p>
           <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px;">
-            <button class="hbtn primary" style="display:flex;" onclick="triggerImport()">Browse for .bib file</button>
-            <button class="hbtn" style="display:flex;" onclick="triggerCsvImport()">Import .csv</button>
+            <button class="hbtn primary" style="display:flex;" data-action="triggerImport">Browse for .bib file</button>
+            <button class="hbtn" style="display:flex;" data-action="triggerCsvImport">Import .csv</button>
           </div>
           <div class="drop-zone-sub" id="drop-zone-sub">Or start fresh and add entries manually via DOI lookup</div>
         </div>
@@ -1141,7 +1150,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="autoload-spinner" id="autoload-spinner"></div>
           <span id="autoload-msg">Loading…</span>
         </div>
-        <button class="hbtn" onclick="startFresh()" style="font-size: 14px;">Start with empty library →</button>
+        <button class="hbtn" data-action="startFresh" style="font-size: 14px;">Start with empty library →</button>
       </div>
 
       <!-- List header (hidden until loaded) -->
@@ -1167,7 +1176,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <!-- DETAIL PANEL -->
     <div id="detail">
       <!-- Mobile back button -->
-      <div id="detail-back-btn" onclick="mobileShowList()">
+      <div id="detail-back-btn" data-action="mobileShowList">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -1191,16 +1200,16 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div id="d-year" class="detail-year"></div>
         </div>
         <div class="detail-actions">
-          <div class="detail-btn edit-btn" id="btn-edit" onclick="toggleEdit()">Edit</div>
-          <div class="detail-btn" id="btn-copy-key" onclick="copyKey()">Copy Key</div>
-          <div class="detail-btn" id="btn-copy-bib" onclick="copyBibEntry()">Copy BibTeX</div>
-          <div class="detail-btn danger" id="btn-delete" onclick="deleteEntry()">Delete</div>
+          <div class="detail-btn edit-btn" id="btn-edit" data-action="toggleEdit">Edit</div>
+          <div class="detail-btn" id="btn-copy-key" data-action="copyKey">Copy Key</div>
+          <div class="detail-btn" id="btn-copy-bib" data-action="copyBibEntry">Copy BibTeX</div>
+          <div class="detail-btn danger" id="btn-delete" data-action="deleteEntry">Delete</div>
         </div>
         <div id="detail-fields"></div>
 
         <!-- Raw BibTeX collapsible pane -->
         <div id="bibtex-pane">
-          <div id="bibtex-toggle" onclick="toggleBibtexPane()" title="Show/hide raw BibTeX entry">
+          <div id="bibtex-toggle" data-action="toggleBibtexPane" title="Show/hide raw BibTeX entry">
             <span>
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:5px">
                 <rect x="1" y="2" width="7" height="9" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/>
@@ -1225,17 +1234,17 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
           <!-- Source tabs -->
           <div class="fetch-tabs">
-            <div class="fetch-tab active" id="ftab-doi"    onclick="switchFetchTab('doi')">DOI / CrossRef</div>
-            <div class="fetch-tab"        id="ftab-isbn"   onclick="switchFetchTab('isbn')">ISBN / Open Library</div>
-            <div class="fetch-tab"        id="ftab-title"  onclick="switchFetchTab('title')">Title Search</div>
-            <div class="fetch-tab"        id="ftab-photo"  onclick="switchFetchTab('photo')">📷 Photo</div>
+            <div class="fetch-tab active" id="ftab-doi"    data-action="switchFetchTab" data-arg="doi">DOI / CrossRef</div>
+            <div class="fetch-tab"        id="ftab-isbn"   data-action="switchFetchTab" data-arg="isbn">ISBN / Open Library</div>
+            <div class="fetch-tab"        id="ftab-title"  data-action="switchFetchTab" data-arg="title">Title Search</div>
+            <div class="fetch-tab"        id="ftab-photo"  data-action="switchFetchTab" data-arg="photo">📷 Photo</div>
           </div>
 
           <!-- Panel: DOI → CrossRef -->
           <div class="fetch-panel active" id="fpanel-doi">
             <div class="fetch-row">
               <input class="form-input mono" id="doi-input" placeholder="10.xxxx/xxxxx or https://doi.org/…" autocomplete="off">
-              <button class="fetch-btn crossref" id="doi-btn" onclick="doiLookup()">CrossRef ↗</button>
+              <button class="fetch-btn crossref" id="doi-btn" data-action="doiLookup">CrossRef ↗</button>
             </div>
             <div class="fetch-status" id="doi-status"></div>
           </div>
@@ -1244,15 +1253,15 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="fetch-panel" id="fpanel-isbn">
             <div class="fetch-row">
               <input class="form-input mono" id="isbn-input" placeholder="978-x-xxx-xxxxx-x or 10-digit" autocomplete="off">
-              <button class="fetch-btn openlibrary" id="isbn-ol-btn" onclick="isbnLookup()">Open Library ↗</button>
+              <button class="fetch-btn openlibrary" id="isbn-ol-btn" data-action="isbnLookup">Open Library ↗</button>
             </div>
             <div class="fetch-row" style="margin-top:2px;">
               <span class="fetch-hint" style="flex:1">Google Books used as fallback if Open Library returns sparse data</span>
-              <button class="fetch-btn googlebooks" id="isbn-gb-btn" onclick="googleBooksIsbnLookup()">Google Books ↗</button>
+              <button class="fetch-btn googlebooks" id="isbn-gb-btn" data-action="googleBooksIsbnLookup">Google Books ↗</button>
             </div>
             <div class="fetch-row" style="margin-top:2px;">
               <span class="fetch-hint" style="flex:1">Can't find it? Search WorldCat directly</span>
-              <button class="fetch-btn worldcat" onclick="openWorldCat()">WorldCat ↗</button>
+              <button class="fetch-btn worldcat" data-action="openWorldCat">WorldCat ↗</button>
             </div>
             <div class="fetch-status" id="isbn-status"></div>
           </div>
@@ -1264,9 +1273,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
               <input class="form-input" id="author-search-input" placeholder="Author surname" autocomplete="off" style="flex:1">
             </div>
             <div class="fetch-row" style="margin-top:4px;">
-              <button class="fetch-btn openlibrary" id="title-ol-btn" onclick="titleSearchOpenLibrary()">Open Library ↗</button>
-              <button class="fetch-btn googlebooks" id="title-gb-btn" onclick="titleSearchGoogleBooks()">Google Books ↗</button>
-              <button class="fetch-btn worldcat" onclick="openWorldCat()">WorldCat ↗</button>
+              <button class="fetch-btn openlibrary" id="title-ol-btn" data-action="titleSearchOpenLibrary">Open Library ↗</button>
+              <button class="fetch-btn googlebooks" id="title-gb-btn" data-action="titleSearchGoogleBooks">Google Books ↗</button>
+              <button class="fetch-btn worldcat" data-action="openWorldCat">WorldCat ↗</button>
             </div>
             <div class="fetch-status" id="title-status"></div>
           </div>
@@ -1304,7 +1313,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-section-title">Core Fields</div>
           <div class="form-grid full" style="margin-bottom:8px;">
             <div class="form-group">
-              <label class="form-label">Entry Type</label>
+              <label class="form-label" for="f-type">Entry Type</label>
               <select class="form-select" id="f-type">
                 <option value="article">article</option>
                 <option value="book">book</option>
@@ -1321,7 +1330,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           </div>
           <div class="form-grid full">
             <div class="form-group">
-              <label class="form-label">Citation Key</label>
+              <label class="form-label" for="f-key">Citation Key</label>
               <input class="form-input mono" id="f-key" placeholder="author:year:keyword">
             </div>
           </div>
@@ -1331,23 +1340,23 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-section-title">Bibliographic Info</div>
           <div class="form-grid full">
             <div class="form-group">
-              <label class="form-label">Title</label>
+              <label class="form-label" for="f-title">Title</label>
               <input class="form-input" id="f-title" placeholder="Full title including subtitle">
             </div>
           </div>
           <div class="form-grid full" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Author(s) — Last, First and Last, First</label>
+              <label class="form-label" for="f-author">Author(s) — Last, First and Last, First</label>
               <input class="form-input" id="f-author" placeholder="Smith, John and Doe, Jane">
             </div>
           </div>
           <div class="form-grid" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Year</label>
+              <label class="form-label" for="f-year">Year</label>
               <input class="form-input mono" id="f-year" placeholder="2024" maxlength="4">
             </div>
             <div class="form-group">
-              <label class="form-label">Editor(s)</label>
+              <label class="form-label" for="f-editor">Editor(s)</label>
               <input class="form-input" id="f-editor" placeholder="Editor, Name">
             </div>
           </div>
@@ -1357,37 +1366,37 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-section-title">Publication Venue</div>
           <div class="form-grid full">
             <div class="form-group">
-              <label class="form-label">Journal / Booktitle / Publisher</label>
+              <label class="form-label" for="f-venue">Journal / Booktitle / Publisher</label>
               <input class="form-input" id="f-venue" placeholder="Journal of Urban Economics">
             </div>
           </div>
           <div class="form-grid" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Volume</label>
+              <label class="form-label" for="f-volume">Volume</label>
               <input class="form-input mono" id="f-volume" placeholder="42">
             </div>
             <div class="form-group">
-              <label class="form-label">Number / Issue</label>
+              <label class="form-label" for="f-number">Number / Issue</label>
               <input class="form-input mono" id="f-number" placeholder="3">
             </div>
           </div>
           <div class="form-grid" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Pages</label>
+              <label class="form-label" for="f-pages">Pages</label>
               <input class="form-input mono" id="f-pages" placeholder="123--456">
             </div>
             <div class="form-group">
-              <label class="form-label">Edition</label>
+              <label class="form-label" for="f-edition">Edition</label>
               <input class="form-input mono" id="f-edition" placeholder="3rd">
             </div>
           </div>
           <div class="form-grid" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Publisher</label>
+              <label class="form-label" for="f-publisher">Publisher</label>
               <input class="form-input" id="f-publisher" placeholder="University Press">
             </div>
             <div class="form-group">
-              <label class="form-label">Address / City</label>
+              <label class="form-label" for="f-address">Address / City</label>
               <input class="form-input" id="f-address" placeholder="Cambridge, MA">
             </div>
           </div>
@@ -1397,23 +1406,23 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-section-title">Identifiers</div>
           <div class="form-grid full">
             <div class="form-group">
-              <label class="form-label">DOI</label>
+              <label class="form-label" for="f-doi">DOI</label>
               <input class="form-input mono" id="f-doi" placeholder="10.xxxx/xxxxx">
             </div>
           </div>
           <div class="form-grid" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">ISBN</label>
+              <label class="form-label" for="f-isbn">ISBN</label>
               <input class="form-input mono" id="f-isbn" placeholder="978-x-xxx-xxxxx-x">
             </div>
             <div class="form-group">
-              <label class="form-label">ISSN</label>
+              <label class="form-label" for="f-issn">ISSN</label>
               <input class="form-input mono" id="f-issn" placeholder="xxxx-xxxx">
             </div>
           </div>
           <div class="form-grid full" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">URL</label>
+              <label class="form-label" for="f-url">URL</label>
               <input class="form-input mono" id="f-url" placeholder="https://...">
             </div>
           </div>
@@ -1425,8 +1434,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <!-- JEL Picker -->
           <div class="form-group" style="margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-              <label class="form-label" style="margin:0;">JEL Codes</label>
-              <button class="suggest-btn" id="jel-suggest-btn" onclick="suggestJEL()" title="Auto-suggest top 3 JEL codes from AEA classification tree">
+              <label class="form-label" for="jel-search" style="margin:0;">JEL Codes</label>
+              <button class="suggest-btn" id="jel-suggest-btn" data-action="suggestJEL" title="Auto-suggest top 3 JEL codes from AEA classification tree">
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1a5 5 0 100 10A5 5 0 006 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v2.5L7.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 Fetch JEL
               </button>
@@ -1450,8 +1459,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <!-- LOC Picker -->
           <div class="form-group">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-              <label class="form-label" style="margin:0;">Library of Congress Classification</label>
-              <button class="suggest-btn" id="loc-suggest-btn" onclick="suggestLOC()" title="Auto-suggest LOC class (books only)">
+              <label class="form-label" for="f-lcc" style="margin:0;">Library of Congress Classification</label>
+              <button class="suggest-btn" id="loc-suggest-btn" data-action="suggestLOC" title="Auto-suggest LOC class (books only)">
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1a5 5 0 100 10A5 5 0 006 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v2.5L7.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 Suggest LOC
               </button>
@@ -1474,27 +1483,27 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <div class="form-section-title">Notes & Abstract</div>
           <div class="form-grid full">
             <div class="form-group">
-              <label class="form-label">Abstract</label>
+              <label class="form-label" for="f-abstract">Abstract</label>
               <textarea class="form-textarea" id="f-abstract" rows="4" placeholder="Abstract text…"></textarea>
             </div>
           </div>
           <div class="form-grid full" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Keywords</label>
+              <label class="form-label" for="f-keywords">Keywords</label>
               <input class="form-input" id="f-keywords" placeholder="urban, housing, spatial economics">
             </div>
           </div>
           <div class="form-grid full" style="margin-top:8px;">
             <div class="form-group">
-              <label class="form-label">Note</label>
+              <label class="form-label" for="f-note">Note</label>
               <input class="form-input" id="f-note" placeholder="Additional note or flag (e.g. VERIFY)">
             </div>
           </div>
         </div>
 
         <div class="form-save-row">
-          <div class="form-save-btn btn-cancel" onclick="cancelEdit()">Cancel</div>
-          <div class="form-save-btn btn-save" onclick="saveEntry()">Save Entry</div>
+          <div class="form-save-btn btn-cancel" data-action="cancelEdit">Cancel</div>
+          <div class="form-save-btn btn-save" data-action="saveEntry">Save Entry</div>
         </div>
       </div>
     </div>
@@ -1503,7 +1512,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
   <!-- MOBILE BOTTOM NAV -->
   <nav id="mobile-nav">
-    <div class="mobile-nav-btn active" id="mnav-list" onclick="mobileShowList()">
+    <div class="mobile-nav-btn active" id="mnav-list" data-action="mobileShowList">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <line x1="4" y1="6" x2="16" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="4" y1="10" x2="16" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1511,7 +1520,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       List
     </div>
-    <div class="mobile-nav-btn" id="mnav-detail" onclick="mobileShowDetail()">
+    <div class="mobile-nav-btn" id="mnav-detail" data-action="mobileShowDetail">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <line x1="6" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -1520,7 +1529,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       Entry
     </div>
-    <div class="mobile-nav-btn" id="mnav-new" onclick="openNewEntry()">
+    <div class="mobile-nav-btn" id="mnav-new" data-action="openNewEntry">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <line x1="10" y1="6.5" x2="10" y2="13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1528,13 +1537,13 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       New
     </div>
-    <div class="mobile-nav-btn" id="mnav-filters" onclick="toggleSidebar()">
+    <div class="mobile-nav-btn" id="mnav-filters" data-action="toggleSidebar">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <path d="M3 5h14M6 10h8M9 15h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       Filters
     </div>
-    <div class="mobile-nav-btn" id="mnav-save" onclick="fsSave()">
+    <div class="mobile-nav-btn" id="mnav-save" data-action="fsSave">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <rect x="3" y="3" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <rect x="6.5" y="3" width="7" height="5.5" rx=".5" fill="currentColor" opacity=".5"/>
@@ -1542,7 +1551,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       Save
     </div>
-    <div class="mobile-nav-btn" id="mnav-photo" onclick="openPhotoBatch()">
+    <div class="mobile-nav-btn" id="mnav-photo" data-action="openPhotoBatch">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 15.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 1 15.5V7a1.5 1.5 0 0 1 1.5-1.5h3L7 3.5h6l1.5 2H18.5A1.5 1.5 0 0 1 20 7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <circle cx="10" cy="11" r="2.8" stroke="currentColor" stroke-width="1.4" fill="none"/>
@@ -1560,7 +1569,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:700px;max-height:88vh;">
     <div class="modal-header">
       <div class="modal-title">Photo Batch Import</div>
-      <div class="modal-close" onclick="closeModal('photo-batch-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="photo-batch-modal">✕</div>
     </div>
     <div class="modal-body" id="photo-batch-body" style="gap:10px;">
 
@@ -1611,7 +1620,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           </table>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <label style="font-size:12px;color:var(--text2);">Shelf tag (applied to all):</label>
+          <label for="pb-shelf-tag" style="font-size:12px;color:var(--text2);">Shelf tag (applied to all):</label>
           <input class="form-input mono" id="pb-shelf-tag" placeholder="e.g. XIV-A"
                  style="width:110px;font-size:12px;padding:4px 8px;">
           <span style="font-size:11px;color:var(--text3);">Edit individually in each entry after import</span>
@@ -1626,8 +1635,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
     </div>
     <div class="modal-footer" id="photo-batch-footer">
-      <button class="modal-btn secondary" onclick="pbClose()">Close</button>
-      <button class="modal-btn primary" id="pb-action-btn" style="display:none;" onclick=""></button>
+      <button class="modal-btn secondary" data-action="pbClose">Close</button>
+      <button class="modal-btn primary" id="pb-action-btn" style="display:none;"></button>
     </div>
   </div>
 </div>
@@ -1637,7 +1646,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:420px;">
     <div class="modal-header">
       <div class="modal-title">Anthropic API Key</div>
-      <div class="modal-close" onclick="closeModal('apikey-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="apikey-modal">✕</div>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text2);line-height:1.55;margin:0 0 10px;">
@@ -1646,7 +1655,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         Never written to disk or transmitted anywhere except <code style="font-size:12px;">api.anthropic.com</code>.
       </p>
       <div class="form-group">
-        <label class="form-label">API Key</label>
+        <label class="form-label" for="apikey-input">API Key</label>
         <input class="form-input mono" id="apikey-input" type="password"
                placeholder="sk-ant-…" autocomplete="off" style="font-size:13px;"
                onkeydown="if(event.key==='Enter') saveApiKey()">
@@ -1654,8 +1663,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div id="apikey-status" style="font-size:12px;color:var(--text3);min-height:16px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('apikey-modal')">Cancel</button>
-      <button class="modal-btn primary" onclick="saveApiKey()">Save for Session</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="apikey-modal">Cancel</button>
+      <button class="modal-btn primary" data-action="saveApiKey">Save for Session</button>
     </div>
   </div>
 </div>
@@ -1664,22 +1673,22 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:440px;">
     <div class="modal-header">
       <div class="modal-title">Quick Add via DOI</div>
-      <div class="modal-close" onclick="closeModal('doi-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="doi-modal">✕</div>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Paste DOI</label>
+        <label class="form-label" for="modal-doi">Paste DOI</label>
         <div class="doi-lookup-row">
           <input class="form-input mono" id="modal-doi" placeholder="10.xxxx/xxxxx or full https://doi.org/…" style="font-size: 14px;">
-          <button class="doi-lookup-btn" id="modal-doi-btn" onclick="modalDoiLookup()">Fetch ↗</button>
+          <button class="doi-lookup-btn" id="modal-doi-btn" data-action="modalDoiLookup">Fetch ↗</button>
         </div>
       </div>
       <div id="modal-doi-result" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; font-size: 15px; line-height:1.6; color:var(--text2);">
       </div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('doi-modal')">Cancel</button>
-      <button class="modal-btn primary" id="modal-doi-save" onclick="saveDoiEntry()" disabled>Add to Library</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="doi-modal">Cancel</button>
+      <button class="modal-btn primary" id="modal-doi-save" data-action="saveDoiEntry" disabled>Add to Library</button>
     </div>
   </div>
 </div>
@@ -1689,13 +1698,13 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:560px;">
     <div class="modal-header">
       <div class="modal-title">Library Statistics</div>
-      <div class="modal-close" onclick="closeModal('stats-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="stats-modal">✕</div>
     </div>
     <div class="modal-body" id="stats-modal-body">
       <div style="color:var(--text3);font-family:var(--mono);font-size:12px;">Loading…</div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('stats-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="stats-modal">Close</button>
     </div>
   </div>
 </div>
@@ -1705,11 +1714,11 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:500px;">
     <div class="modal-header">
       <div class="modal-title">Find &amp; Replace</div>
-      <div class="modal-close" onclick="closeModal('fnr-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="fnr-modal">✕</div>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Field to search</label>
+        <label class="form-label" for="fnr-field">Field to search</label>
         <select class="fnr-field-select" id="fnr-field" style="width:100%">
           <option value="all">All text fields</option>
           <option value="author">author</option>
@@ -1726,11 +1735,11 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         </select>
       </div>
       <div class="form-group" style="margin-top:10px;">
-        <label class="form-label">Find</label>
+        <label class="form-label" for="fnr-find">Find</label>
         <input class="form-input" id="fnr-find" placeholder="Text to find…" autocomplete="off">
       </div>
       <div class="form-group" style="margin-top:8px;">
-        <label class="form-label">Replace with</label>
+        <label class="form-label" for="fnr-replace">Replace with</label>
         <input class="form-input" id="fnr-replace" placeholder="Replacement text (leave empty to delete)" autocomplete="off">
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
@@ -1744,9 +1753,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div class="fnr-results" id="fnr-results"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="fnrPreview()">Preview matches</button>
-      <button class="modal-btn secondary" onclick="closeModal('fnr-modal')">Cancel</button>
-      <button class="modal-btn primary" id="fnr-replace-btn" onclick="fnrExecute()" disabled>Replace all</button>
+      <button class="modal-btn secondary" data-action="fnrPreview">Preview matches</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="fnr-modal">Cancel</button>
+      <button class="modal-btn primary" id="fnr-replace-btn" data-action="fnrExecute" disabled>Replace all</button>
     </div>
   </div>
 </div>
@@ -1756,7 +1765,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:460px;">
     <div class="modal-header">
       <div class="modal-title">Keyboard Shortcuts</div>
-      <div class="modal-close" onclick="closeModal('shortcuts-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="shortcuts-modal">✕</div>
     </div>
     <div class="modal-body">
       <table class="shortcut-table">
@@ -1781,7 +1790,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </table>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('shortcuts-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="shortcuts-modal">Close</button>
     </div>
   </div>
 </div>
@@ -1791,14 +1800,31 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:660px;max-height:85vh;">
     <div class="modal-header">
       <div class="modal-title">Map CSV Columns → BibTeX Fields</div>
-      <div class="modal-close" onclick="closeModal('csv-mapping-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="csv-mapping-modal">✕</div>
     </div>
     <div class="modal-body" id="csv-mapping-body" style="max-height:calc(85vh - 130px);overflow-y:auto;">
     </div>
     <div class="modal-footer">
       <span id="csv-import-count" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-right:auto;"></span>
-      <button class="modal-btn secondary" onclick="closeModal('csv-mapping-modal')">Cancel</button>
-      <button class="modal-btn primary" id="csv-import-btn" onclick="executeCsvImport()">Import</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="csv-mapping-modal">Cancel</button>
+      <button class="modal-btn primary" id="csv-import-btn" data-action="executeCsvImport">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL — replaces native confirm() -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="width:380px;">
+    <div class="modal-header">
+      <div class="modal-title" id="confirm-modal-title">Confirm</div>
+      <div class="modal-close" id="confirm-modal-close">✕</div>
+    </div>
+    <div class="modal-body">
+      <div id="confirm-modal-message" style="font-size:14px;color:var(--text2);line-height:1.5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" id="confirm-modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="confirm-modal-ok">Confirm</button>
     </div>
   </div>
 </div>
@@ -1808,16 +1834,16 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
   <div class="modal" style="width:640px;max-height:85vh;">
     <div class="modal-header">
       <div class="modal-title">Library Insights</div>
-      <div class="modal-close" onclick="closeModal('insights-modal')">✕</div>
+      <div class="modal-close" data-action="closeModal" data-arg="insights-modal">✕</div>
     </div>
     <div class="modal-body" style="max-height:calc(85vh - 120px);overflow-y:auto;">
       <div class="insights-tabs">
-        <div class="insights-tab active" onclick="switchInsightsTab('overview')">Overview</div>
-        <div class="insights-tab" onclick="switchInsightsTab('age')">Citation Age</div>
-        <div class="insights-tab" onclick="switchInsightsTab('authors')">Authors</div>
-        <div class="insights-tab" onclick="switchInsightsTab('venues')">Venues</div>
-        <div class="insights-tab" onclick="switchInsightsTab('jel')">JEL Coverage</div>
-        <div class="insights-tab" onclick="switchInsightsTab('quality')">Quality</div>
+        <div class="insights-tab active" data-action="switchInsightsTab" data-arg="overview">Overview</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="age">Citation Age</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="authors">Authors</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="venues">Venues</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="jel">JEL Coverage</div>
+        <div class="insights-tab" data-action="switchInsightsTab" data-arg="quality">Quality</div>
       </div>
       <div id="insights-panel-overview"  class="insights-panel active"></div>
       <div id="insights-panel-age"       class="insights-panel"></div>
@@ -1827,7 +1853,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div id="insights-panel-quality"   class="insights-panel"></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn secondary" onclick="closeModal('insights-modal')">Close</button>
+      <button class="modal-btn secondary" data-action="closeModal" data-arg="insights-modal">Close</button>
     </div>
   </div>
 </div>
@@ -1970,15 +1996,50 @@ let selected   = null; // currently selected entry key
 let editing    = null; // entry being edited (copy)
 let isNew      = false;
 let editJel    = [];   // JEL codes being edited
+let entryByKey = new Map(); // key -> entry, kept in sync with entries
 
 const ROW_H = 76;
-let scrollTop  = 0;
+
+// Memoization helpers: lazily compute and cache a flat searchable string per
+// entry; invalidated on edit/delete/import via rebuildEntryIndex().
+function getEntrySearchable(e) {
+  if (e._searchable) return e._searchable;
+  const parts = [
+    e.key, e.type,
+    fmt(e,'title'), fmt(e,'author'), fmt(e,'editor'),
+    fmt(e,'year'), fmt(e,'journal'), fmt(e,'booktitle'),
+    fmt(e,'publisher'), fmt(e,'doi'), fmt(e,'jel'),
+    fmt(e,'keywords'), fmt(e,'datasource')
+  ];
+  return (e._searchable = parts.join(' ').toLowerCase());
+}
+
+function invalidateEntryCache(e) {
+  if (!e) return;
+  e._searchable = null;
+  e._sortAuthor = null;
+  e._sortTitle  = null;
+  e._sortYear   = null;
+}
+
+function rebuildEntryIndex() {
+  entryByKey = new Map();
+  for (const e of entries) {
+    entryByKey.set(e.key, e);
+    invalidateEntryCache(e);
+  }
+}
+
+function findEntry(key) {
+  return entryByKey.get(key) || entries.find(e => e.key === key);
+}
 
 // ════════════════════════════════════════════════════
 //  BIBTEX PARSER
 // ════════════════════════════════════════════════════
 function parseBibTeX(src) {
   const results = [];
+  const macros = {}; // L13: @string macros, lowercase name → expanded value
   let i = 0;
   const n = src.length;
 
@@ -2015,6 +2076,29 @@ function parseBibTeX(src) {
     return src.slice(start, i);
   }
 
+  // Read a (possibly concatenated) value with # support and macro substitution.
+  function readValue() {
+    if (src[i] === '{') return readBraceValue();
+    if (src[i] === '"') return readQuoteValue();
+    // Concatenation chain — numbers, bare names (macros), and quoted/brace pieces
+    const parts = [];
+    while (i < n) {
+      skipWS();
+      if (src[i] === '{') parts.push(readBraceValue());
+      else if (src[i] === '"') parts.push(readQuoteValue());
+      else {
+        const tok = readToken();
+        if (!tok) break;
+        if (/^\d+$/.test(tok)) parts.push(tok);
+        else parts.push(macros[tok.toLowerCase()] !== undefined ? macros[tok.toLowerCase()] : tok);
+      }
+      skipWS();
+      if (src[i] === '#') { i++; continue; }
+      break;
+    }
+    return parts.join('');
+  }
+
   while (i < n) {
     // Seek @
     while (i < n && src[i] !== '@') i++;
@@ -2044,13 +2128,20 @@ function parseBibTeX(src) {
     }
 
     if (type === 'string') {
-      // skip
-      let depth = 1;
-      while (i < n && depth > 0) {
-        if (src[i] === '{') depth++;
-        else if (src[i] === '}') depth--;
-        i++;
+      // L13: parse @string{name = "value"} (or {value}) into macros map
+      skipWS();
+      const nameStart = i;
+      while (i < n && src[i] !== '=' && src[i] !== '}' && src[i] !== ')') i++;
+      const macroName = src.slice(nameStart, i).trim().toLowerCase();
+      if (src[i] === '=') {
+        i++; // skip =
+        skipWS();
+        const value = readValue();
+        if (macroName) macros[macroName] = value;
+        skipWS();
       }
+      // consume to closer
+      if (src[i] === closer) i++;
       continue;
     }
 
@@ -2089,29 +2180,8 @@ function parseBibTeX(src) {
       i++; // skip =
       skipWS();
 
-      // Value
-      let value = '';
-      if (src[i] === '{') {
-        value = readBraceValue();
-      } else if (src[i] === '"') {
-        value = readQuoteValue();
-      } else {
-        // could be number or concatenation
-        const parts = [];
-        while (i < n) {
-          skipWS();
-          if (src[i] === '{') parts.push(readBraceValue());
-          else if (src[i] === '"') parts.push(readQuoteValue());
-          else {
-            const tok = readToken();
-            if (tok && tok !== '#') parts.push(tok);
-          }
-          skipWS();
-          if (src[i] === '#') { i++; continue; }
-          break;
-        }
-        value = parts.join('');
-      }
+      // Value (with macro substitution + # concatenation)
+      const value = readValue();
 
       if (fieldName) fields[fieldName] = value;
 
@@ -2170,7 +2240,53 @@ function getVenue(e) {
   return fmt(e,'journal') || fmt(e,'booktitle') || fmt(e,'publisher') || fmt(e,'institution') || fmt(e,'school') || '';
 }
 
-function stripBraces(s) { return s.replace(/[{}\\]/g, ''); }
+// L8: stripBraces preserves accented characters from LaTeX escapes.
+// Translates \'{e} → é, \`{a} → à, \"{u} → ü, etc., before stripping braces.
+const LATEX_ACCENTS = {
+  // command → combining diacritical mark (applied to following letter)
+  "'": '́', // acute
+  '`': '̀', // grave
+  '"': '̈', // umlaut/diaeresis
+  '^': '̂', // circumflex
+  '~': '̃', // tilde
+  '=': '̄', // macron
+  '.': '̇', // dot above
+  'c': '̧', // cedilla
+  'u': '̆', // breve
+  'v': '̌', // caron / háček
+  'H': '̋', // double acute
+  'd': '̣', // dot below
+  'b': '̱', // macron below
+  'k': '̨', // ogonek
+  'r': '̊', // ring above
+};
+function applyLatexAccents(s) {
+  if (!s || s.indexOf('\\') < 0) return s;
+  // \X{letter} or \X letter — where X is one of the accent commands.
+  // Build regex: backslash, accent-char (escaped where needed), optional {letter} or space+letter
+  return s.replace(/\\([`'"^~=.cuvHdbkr])\{?([A-Za-z])\}?/g, (m, cmd, letter) => {
+    const mark = LATEX_ACCENTS[cmd];
+    if (!mark) return m;
+    // Normalize composed form so the result is a single codepoint where possible
+    return (letter + mark).normalize('NFC');
+  });
+}
+function stripBraces(s) {
+  if (!s) return '';
+  return applyLatexAccents(s).replace(/[{}\\]/g, '');
+}
+
+// L18: 1→a, 2→b, … 26→z, 27→aa, 28→ab, …
+// Wraps to multi-letter suffixes after z instead of producing {|}~ glyphs.
+function autoSuffix(n) {
+  let s = '';
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(97 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
 
 function typeClass(t) {
   const m = { article:'type-article', book:'type-book', inbook:'type-inbook',
@@ -2199,11 +2315,8 @@ let filterYearTo   = '';
 let filterDatasource = '';
 let sortMode   = 'year-desc';
 
-function getSearchable(e) {
-  return [e.key, fmt(e,'title'), fmt(e,'author'), fmt(e,'year'),
-    fmt(e,'journal'), fmt(e,'booktitle'), fmt(e,'doi'), fmt(e,'jel'),
-    fmt(e,'keywords'), fmt(e,'datasource')].join(' ').toLowerCase();
-}
+// Thin shim — actual memoization lives in getEntrySearchable (top of file).
+function getSearchable(e) { return getEntrySearchable(e); }
 
 function applyFilters() {
   filterYearFrom   = document.getElementById('year-from').value;
@@ -2212,6 +2325,14 @@ function applyFilters() {
   filterLOC        = document.getElementById('loc-filter').value;
   filterDatasource = document.getElementById('datasource-filter').value;
   runFilter();
+}
+
+// L14: debounced wrapper for year-from/to oninput so we don't run the whole
+// filter pipeline on every keystroke.
+let _applyFiltersTimer;
+function debouncedApplyFilters() {
+  clearTimeout(_applyFiltersTimer);
+  _applyFiltersTimer = setTimeout(applyFilters, 200);
 }
 
 function runFilter() {
@@ -2239,13 +2360,18 @@ function runFilter() {
 
 function applySort(rerun = true) {
   sortMode = document.getElementById('sort-select').value;
+  // Sort key cache — populated once per entry per session and invalidated on mutation.
+  const getSortAuthor = e => e._sortAuthor || (e._sortAuthor = (getAuthors(e) || '').toLowerCase());
+  const getSortTitle  = e => e._sortTitle  || (e._sortTitle  = (stripBraces(fmt(e,'title')) || '').toLowerCase());
+  const getSortYear   = e => (e._sortYear != null ? e._sortYear : (e._sortYear = parseInt(fmt(e,'year')) || 0));
+
   filtered.sort((a, b) => {
     switch(sortMode) {
-      case 'year-desc': return (parseInt(fmt(b,'year'))||0) - (parseInt(fmt(a,'year'))||0);
-      case 'year-asc':  return (parseInt(fmt(a,'year'))||0) - (parseInt(fmt(b,'year'))||0);
-      case 'author-asc':  return getAuthors(a).localeCompare(getAuthors(b));
-      case 'author-desc': return getAuthors(b).localeCompare(getAuthors(a));
-      case 'title-asc':   return stripBraces(fmt(a,'title')).localeCompare(stripBraces(fmt(b,'title')));
+      case 'year-desc': return getSortYear(b) - getSortYear(a);
+      case 'year-asc':  return getSortYear(a) - getSortYear(b);
+      case 'author-asc':  return getSortAuthor(a).localeCompare(getSortAuthor(b));
+      case 'author-desc': return getSortAuthor(b).localeCompare(getSortAuthor(a));
+      case 'title-asc':   return getSortTitle(a).localeCompare(getSortTitle(b));
       case 'key-asc':     return a.key.localeCompare(b.key);
       default: return 0;
     }
@@ -2278,7 +2404,16 @@ function renderList() {
   renderVisible();
 }
 
+let _renderRaf = 0;
 function renderVisible() {
+  if (_renderRaf) return;
+  _renderRaf = requestAnimationFrame(() => {
+    _renderRaf = 0;
+    _renderVisibleNow();
+  });
+}
+
+function _renderVisibleNow() {
   const wrap  = document.getElementById('list-scroll');
   const items = document.getElementById('list-items');
   if (!wrap) return;
@@ -2295,18 +2430,22 @@ function renderVisible() {
     const e = filtered[i];
     const jel = fmt(e,'jel');
     const sel = e.key === selected ? ' selected' : '';
-    html += `<div class="entry-row${sel}" onclick="selectEntry('${e.key.replace(/'/g,"\\'")}')">
-      <div class="row-type ${typeClass(e.type)}">${e.type}</div>
+    const title = stripBraces(fmt(e,'title'));
+    const year = fmt(e,'year');
+    const venue = getVenue(e);
+    const jelChips = jel ? jel.split(/[;,\s]+/).filter(Boolean).slice(0,3).join(' ') : '';
+    html += `<div class="entry-row${sel}" data-key="${escHtml(e.key)}">
+      <div class="row-type ${typeClass(e.type)}">${escHtml(e.type)}</div>
       <div class="row-main">
-        <div class="row-authors">${stripBraces(getAuthors(e))}</div>
-        <div class="row-title">${stripBraces(fmt(e,'title')) || '<em style="color:var(--text3)">(no title)</em>'}</div>
+        <div class="row-authors">${escHtml(stripBraces(getAuthors(e)))}</div>
+        <div class="row-title">${title ? escHtml(title) : '<em style="color:var(--text3)">(no title)</em>'}</div>
         <div class="row-meta">
-          ${fmt(e,'year') ? `<span class="row-year">${fmt(e,'year')}</span>` : ''}
-          ${getVenue(e) ? `<span class="row-venue">${stripBraces(getVenue(e))}</span>` : ''}
-          ${jel ? `<span class="row-jel">${jel.split(/[;,\s]+/).slice(0,3).join(' ')}</span>` : ''}
+          ${year ? `<span class="row-year">${escHtml(year)}</span>` : ''}
+          ${venue ? `<span class="row-venue">${escHtml(stripBraces(venue))}</span>` : ''}
+          ${jelChips ? `<span class="row-jel">${escHtml(jelChips)}</span>` : ''}
         </div>
       </div>
-      <div class="row-key">${e.key}</div>
+      <div class="row-key">${escHtml(e.key)}</div>
     </div>`;
   }
   items.innerHTML = html;
@@ -2316,35 +2455,42 @@ function renderVisible() {
 //  SIDEBAR FILTERS BUILD
 // ════════════════════════════════════════════════════
 function buildSidebarFilters() {
-  // Type counts
+  // Single pass: type counts, JEL set, LOC set
   const counts = {};
-  entries.forEach(e => { counts[e.type] = (counts[e.type]||0)+1; });
+  const jelSet = new Set();
+  const locSet = new Set();
+  for (const e of entries) {
+    counts[e.type] = (counts[e.type]||0)+1;
+    const jelRaw = fmt(e,'jel');
+    if (jelRaw) {
+      for (const c of jelRaw.split(/[;,\s]+/)) {
+        if (c.length >= 2) jelSet.add(c.trim().toUpperCase());
+      }
+    }
+    const l = fmt(e,'lcc');
+    if (l) locSet.add(l.split(' ')[0]);
+  }
+
   const types = [['','All',entries.length],...Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
   const tf = document.getElementById('type-filters');
   tf.innerHTML = types.map(([val,label,cnt]) => `
-    <div class="filter-opt${filterType===val?' active':''}" onclick="setTypeFilter('${val}')">
-      <span>${label}</span>
+    <div class="filter-opt${filterType===val?' active':''}" data-type="${escHtml(val)}" role="button" tabindex="0">
+      <span>${escHtml(label)}</span>
       <span class="count">${cnt.toLocaleString()}</span>
     </div>`).join('');
 
   // JEL filter select
-  const jelSet = new Set();
-  entries.forEach(e => {
-    (fmt(e,'jel')||'').split(/[;,\s]+/).forEach(c => { if(c.length>=2) jelSet.add(c.trim().toUpperCase()); });
-  });
   const jelSelect = document.getElementById('jel-filter');
   const usedTop = [...jelSet].filter(c=>c.length===1).sort();
   const usedSub = [...jelSet].filter(c=>c.length>=2).sort();
   jelSelect.innerHTML = '<option value="">All JEL codes</option>'
-    + usedTop.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||'Unknown'}</option>`).join('')
-    + usedSub.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||''}</option>`).join('');
+    + usedTop.map(c=>`<option value="${escHtml(c)}">${escHtml(c)} — ${escHtml(JEL_MAP[c]||'Unknown')}</option>`).join('')
+    + usedSub.map(c=>`<option value="${escHtml(c)}">${escHtml(c)} — ${escHtml(JEL_MAP[c]||'')}</option>`).join('');
 
   // LOC filter
-  const locSet = new Set();
-  entries.forEach(e => { const l=fmt(e,'lcc'); if(l) locSet.add(l.split(' ')[0]); });
   const locSelect = document.getElementById('loc-filter');
   locSelect.innerHTML = '<option value="">All LOC classes</option>'
-    + [...locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+    + [...locSet].sort().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
 }
 
 function setTypeFilter(val) {
@@ -2359,7 +2505,7 @@ function setTypeFilter(val) {
 function selectEntry(key) {
   if (editing) return;
   selected = key;
-  const e = entries.find(x => x.key === key);
+  const e = findEntry(key);
   if (!e) return;
   // Enable duplicate button
   const dupeBtn = document.getElementById('tbtn-dupe');
@@ -2385,11 +2531,11 @@ function showDetail(e) {
   const fields = document.getElementById('detail-fields');
   const rows = [];
 
-  const addField = (label, val, cls='') => {
+  const addField = (label, val, cls='', isHtml=false) => {
     if (!val) return;
     rows.push(`<div class="field-row">
-      <div class="field-label">${label}</div>
-      <div class="field-value ${cls}">${val}</div>
+      <div class="field-label">${escHtml(label)}</div>
+      <div class="field-value ${escHtml(cls)}">${isHtml ? val : escHtml(val)}</div>
     </div>`);
   };
 
@@ -2402,12 +2548,18 @@ function showDetail(e) {
   if (fmt(e,'edition')) addField('Edition', fmt(e,'edition'));
   if (fmt(e,'editor')) addField('Editor(s)', stripBraces(fmt(e,'editor')));
 
-  if (fmt(e,'doi')) rows.push(`<div class="field-row">
-    <div class="field-label">DOI</div>
-    <div class="field-value doi" onclick="window.open('https://doi.org/${fmt(e,'doi')}','_blank')">${fmt(e,'doi')}</div>
-  </div>`);
+  if (fmt(e,'doi')) {
+    const doi = fmt(e,'doi');
+    rows.push(`<div class="field-row">
+      <div class="field-label">DOI</div>
+      <div class="field-value doi" data-doi="${escHtml(doi)}">${escHtml(doi)}</div>
+    </div>`);
+  }
   if (fmt(e,'isbn')) addField('ISBN', fmt(e,'isbn'), 'mono');
-  if (fmt(e,'url'))  addField('URL',  `<a href="${fmt(e,'url')}" target="_blank" style="color:var(--blue)">${fmt(e,'url').slice(0,50)}…</a>`);
+  if (fmt(e,'url')) {
+    const url = fmt(e,'url');
+    addField('URL', `<a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">${escHtml(url.slice(0,50))}…</a>`, '', true);
+  }
 
   // JEL
   const jelCodes = (fmt(e,'jel')||'').split(/[;,\s]+/).filter(c=>c.length>=2);
@@ -2415,8 +2567,8 @@ function showDetail(e) {
     rows.push(`<div class="field-row">
       <div class="field-label">JEL Codes</div>
       <div class="field-value">
-        <div class="jel-tags">${jelCodes.map(c=>`<span class="jel-tag" title="${JEL_MAP[c]||''}">${c}</span>`).join('')}</div>
-        ${jelCodes.map(c=>JEL_MAP[c]?`<div style="font-size: 13px;color:var(--text3);margin-top:2px">${c}: ${JEL_MAP[c]}</div>`:'').join('')}
+        <div class="jel-tags">${jelCodes.map(c=>`<span class="jel-tag" title="${escHtml(JEL_MAP[c]||'')}">${escHtml(c)}</span>`).join('')}</div>
+        ${jelCodes.map(c=>JEL_MAP[c]?`<div style="font-size: 13px;color:var(--text3);margin-top:2px">${escHtml(c)}: ${escHtml(JEL_MAP[c])}</div>`:'').join('')}
       </div>
     </div>`);
   }
@@ -2427,14 +2579,14 @@ function showDetail(e) {
     const locName = LOC.find(([c])=>cls.startsWith(c));
     rows.push(`<div class="field-row">
       <div class="field-label">LOC Classification</div>
-      <div class="field-value"><span class="loc-tag">${cls}</span>${locName?` <span style="font-size: 13px;color:var(--text3)">${locName[1]}</span>`:''}</div>
+      <div class="field-value"><span class="loc-tag">${escHtml(cls)}</span>${locName?` <span style="font-size: 13px;color:var(--text3)">${escHtml(locName[1])}</span>`:''}</div>
     </div>`);
   }
 
   if (fmt(e,'keywords')) addField('Keywords', fmt(e,'keywords'));
   if (fmt(e,'abstract')) rows.push(`<div class="field-row">
     <div class="field-label">Abstract</div>
-    <div class="field-value abstract">${fmt(e,'abstract')}</div>
+    <div class="field-value abstract">${escHtml(fmt(e,'abstract'))}</div>
   </div>`);
   if (fmt(e,'note')) addField('Note', fmt(e,'note'));
 
@@ -2444,14 +2596,14 @@ function showDetail(e) {
     const dsLabel = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual','csv-import':'CSV Import','photo-barcode':'Photo (barcode)','photo-vision':'Photo (Vision)'}[ds] || ds;
     rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
       <div class="field-label">Data Source</div>
-      <div class="field-value"><span class="datasource-badge ${ds}">${dsLabel}</span></div>
+      <div class="field-value"><span class="datasource-badge ${escHtml(ds)}">${escHtml(dsLabel)}</span></div>
     </div>`);
   }
 
   // Citation key
   rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
     <div class="field-label">Citation Key</div>
-    <div class="field-value mono">${e.key}</div>
+    <div class="field-value mono">${escHtml(e.key)}</div>
   </div>`);
 
   fields.innerHTML = rows.join('');
@@ -2462,7 +2614,7 @@ function showDetail(e) {
 //  EDIT FORM
 // ════════════════════════════════════════════════════
 function toggleEdit() {
-  const e = entries.find(x => x.key === selected);
+  const e = findEntry(selected);
   if (!e) return;
   openEditForm(e, false);
 }
@@ -2538,7 +2690,7 @@ function cancelEdit() {
   document.getElementById('edit-form').style.display = 'none';
   document.getElementById('btn-edit').classList.remove('editing');
   if (selected) {
-    const e = entries.find(x=>x.key===selected);
+    const e = findEntry(selected);
     if (e) { document.getElementById('detail-content').style.display='flex'; showDetail(e); }
   } else {
     document.getElementById('detail-empty').style.display='flex';
@@ -2556,7 +2708,7 @@ function saveEntry() {
   if (!title) { toast('Title is required.', 'error'); return; }
 
   // Check for duplicate key on new entry
-  if (isNew && entries.find(x=>x.key===key)) {
+  if (isNew && findEntry(key)) {
     toast('Citation key already exists.', 'error'); return;
   }
 
@@ -2589,11 +2741,17 @@ function saveEntry() {
   for (const k in fields) { if (!fields[k]) delete fields[k]; }
 
   if (isNew) {
-    entries.unshift({ type, key, fields });
+    const newE = { type, key, fields };
+    entries.push(newE);
+    entryByKey.set(key, newE);
     toast('Entry added.', 'success');
   } else {
     const idx = entries.findIndex(x=>x.key===selected);
-    entries[idx] = { type, key, fields };
+    const updated = { type, key, fields };
+    entries[idx] = updated;
+    if (selected !== key) entryByKey.delete(selected);
+    entryByKey.set(key, updated);
+    invalidateEntryCache(updated);
     toast('Entry saved.', 'success');
   }
 
@@ -2607,15 +2765,20 @@ function saveEntry() {
   runFilter();
 
   // Show detail
-  const saved = entries.find(x=>x.key===key);
+  const saved = findEntry(key);
   document.getElementById('detail-content').style.display='flex';
   showDetail(saved);
 }
 
-function deleteEntry() {
+async function deleteEntry() {
   if (!selected) return;
-  if (!confirm('Delete this entry? This cannot be undone.')) return;
-  entries = entries.filter(x=>x.key!==selected);
+  const ok = await confirmDialog('Delete this entry? This cannot be undone.', {
+    title: 'Delete entry', okLabel: 'Delete', danger: true
+  });
+  if (!ok) return;
+  const idx = entries.findIndex(x=>x.key===selected);
+  if (idx >= 0) entries.splice(idx, 1);
+  entryByKey.delete(selected);
   selected = null;
   document.getElementById('detail-empty').style.display='flex';
   document.getElementById('detail-content').style.display='none';
@@ -2631,7 +2794,7 @@ function copyKey() {
 
 function copyBibEntry() {
   if (!selected) return;
-  const e = entries.find(x=>x.key===selected);
+  const e = findEntry(selected);
   if (!e) return;
   navigator.clipboard.writeText(entryToBibTeX(e)).then(()=>toast('BibTeX entry copied.','success'));
 }
@@ -2651,7 +2814,7 @@ function toggleBibtexPane() {
 }
 
 function renderBibtexPane() {
-  const e = entries.find(x => x.key === selected);
+  const e = findEntry(selected);
   if (!e) return;
   const raw = entryToBibTeX(e);
   document.getElementById('bibtex-raw-content').innerHTML = highlightBibtex(raw);
@@ -2693,7 +2856,12 @@ function highlightBibtex(raw) {
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
 }
 
 // ════════════════════════════════════════════════════
@@ -2720,7 +2888,7 @@ function renderJelList(q) {
         <span style="color:var(--text2);font-size: 12.5px;">${desc}</span>
       </div>`;
     }
-    return `<div class="jel-item${sel}" onclick="toggleJel('${code}')">
+    return `<div class="jel-item${sel}" data-action="toggleJel" data-arg="${code}">
       <span class="jel-code">${code}</span>
       <span class="jel-desc">${desc}</span>
     </div>`;
@@ -2740,7 +2908,7 @@ function toggleJel(code) {
 function renderJelSelected() {
   const wrap = document.getElementById('jel-selected-tags');
   wrap.innerHTML = editJel.map(c=>`
-    <span class="jel-sel-tag" onclick="toggleJel('${c}')" title="Click to remove">
+    <span class="jel-sel-tag" data-action="toggleJel" data-arg="${c}" title="Click to remove">
       ${c} <span style="opacity:.6">×</span>
     </span>`).join('');
 }
@@ -2763,11 +2931,12 @@ function toggleTheme() {
   document.documentElement.classList.toggle('light', !isDark);
   document.getElementById('theme-icon-dark').style.display  = isDark ? '' : 'none';
   document.getElementById('theme-icon-light').style.display = isDark ? 'none' : '';
-  try { localStorage.setItem('jrl-theme', isDark ? 'dark' : 'light'); } catch(e){}
+  try { localStorage.setItem('bf-theme', isDark ? 'dark' : 'light'); } catch(e){}
 }
 function initTheme() {
   try {
-    const saved = localStorage.getItem('jrl-theme');
+    // Read the new key, falling back to the legacy key for users upgrading.
+    const saved = localStorage.getItem('bf-theme') || localStorage.getItem('jrl-theme');
     if (saved === 'light') { isDark = false; document.documentElement.classList.add('light');
       document.getElementById('theme-icon-dark').style.display = 'none';
       document.getElementById('theme-icon-light').style.display = ''; }
@@ -2856,7 +3025,7 @@ async function pbProcessImage(file) {
         ...b,
         title:   (b.title  || '').trim(),
         author:  (b.author || '').trim(),
-        isbn:    b.isbn && b.isbn !== 'null' ? b.isbn.replace(/\D/g,'') : '',
+        isbn:    b.isbn && b.isbn !== 'null' ? b.isbn.replace(/[^0-9Xx]/g,'').toUpperCase() : '',
         include: true,
         status:  'pending',
         entry:   null
@@ -2875,8 +3044,10 @@ function pbShowReview() {
   const reviewEl = document.getElementById('pb-stage-review');
   reviewEl.style.display = 'flex';
 
-  // Thumbnail
-  document.getElementById('pb-thumb').src = URL.createObjectURL(pbState.file);
+  // Thumbnail (revoke previous blob URL to avoid leaks across imports)
+  const thumb = document.getElementById('pb-thumb');
+  if (thumb.src && thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
+  thumb.src = URL.createObjectURL(pbState.file);
 
   // Build review table
   const tbody = document.getElementById('pb-review-tbody');
@@ -2916,10 +3087,6 @@ function pbShowReview() {
   actionBtn.onclick = pbRunLookups;
 }
 
-function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 function pbToggleBook(i, checked) {
   pbState.books[i].include = checked;
   pbUpdateCount();
@@ -2946,18 +3113,23 @@ async function pbRunLookups() {
   resultsList.innerHTML = '';
   const progressLabel = document.getElementById('pb-progress-label');
 
-  for (let i = 0; i < queue.length; i++) {
-    const b = queue[i];
-    progressLabel.textContent = `[${i+1}/${queue.length}] Looking up "${b.title.replace(/\?$/, '')}"…`;
-
+  // Pre-render rows so the queue is visible up-front
+  for (const b of queue) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:4px;font-size:12px;';
     row.innerHTML = `<span style="color:var(--text3);min-width:22px;font-variant-numeric:tabular-nums;">${b.index}.</span>
                      <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(b.title)}">${escHtml(b.title.replace(/\?$/,''))}</span>
-                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ looking up…</span>`;
+                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ queued</span>`;
     resultsList.appendChild(row);
-    resultsList.scrollTop = resultsList.scrollHeight;
+  }
+  resultsList.scrollTop = resultsList.scrollHeight;
 
+  // M13: parallelize lookups in chunks of 3 (max 3 concurrent, respects API rate limits)
+  const CHUNK = 3;
+  let done = 0;
+  const lookupOne = async (b) => {
+    const statusCell = document.getElementById(`pb-row-st-${b.index}`);
+    if (statusCell) { statusCell.textContent = '⏳ looking up…'; statusCell.style.color = 'var(--text3)'; }
     try {
       let entry = null;
       if (b.isbn && /\d{9,13}/.test(b.isbn)) {
@@ -2966,24 +3138,27 @@ async function pbRunLookups() {
       if (!entry && b.title) {
         entry = await pbFetchByTitle(b.title.replace(/\?$/,''), b.author);
       }
-
-      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
       if (entry) {
         if (pbState.shelfTag) entry.shelf = pbState.shelfTag;
         b.entry  = entry;
         b.status = 'ok';
-        statusCell.textContent = '✓ ' + (entry.key || '');
-        statusCell.style.color = 'var(--green)';
+        if (statusCell) { statusCell.textContent = '✓ ' + (entry.key || ''); statusCell.style.color = 'var(--green)'; }
       } else {
         b.status = 'notfound';
-        statusCell.textContent = '⚠ not found';
-        statusCell.style.color = 'var(--amber)';
+        if (statusCell) { statusCell.textContent = '⚠ not found'; statusCell.style.color = 'var(--amber)'; }
       }
     } catch(err) {
       b.status = 'error';
-      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
       if (statusCell) { statusCell.textContent = '✗ error'; statusCell.style.color = 'var(--red)'; }
+    } finally {
+      done++;
+      progressLabel.textContent = `[${done}/${queue.length}] Looking up…`;
     }
+  };
+
+  for (let i = 0; i < queue.length; i += CHUNK) {
+    const slice = queue.slice(i, i + CHUNK);
+    await Promise.all(slice.map(lookupOne));
   }
 
   // Summary
@@ -3023,14 +3198,14 @@ async function pbRunLookups() {
 async function pbFetchByIsbn(isbn) {
   // Open Library first
   try {
-    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
     const d = await r.json();
     const key = `ISBN:${isbn}`;
     if (d[key]) return pbParseOLData(d[key], isbn, 'photo-barcode');
   } catch {}
   // Google Books fallback
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, isbn, 'photo-barcode');
   } catch {}
@@ -3041,13 +3216,13 @@ async function pbFetchByTitle(title, author) {
   const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
   // Open Library title+author search
   try {
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?q=${q}&limit=1`);
     const d = await r.json();
     if (d.docs?.length) return pbParseOLSearch(d.docs[0], 'photo-vision');
   } catch {}
   // Google Books title search
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, null, 'photo-vision');
   } catch {}
@@ -3116,16 +3291,15 @@ function pbParseOLSearch(doc, src) {
 
 // ── Output Helpers ─────────────────────────────────────────────────────────
 
-function pbAddToLibrary(entries) {
-  if (!window.entries) window.entries = [];
-  entries.forEach(e => window.entries.push(e));
-  if (typeof refreshEntryList === 'function') refreshEntryList();
-  if (typeof renderVirtualList === 'function') renderVirtualList();
-  closeModal('photo-batch-modal');
-  if (typeof showToast === 'function') {
-    showToast(`${entries.length} entr${entries.length!==1?'ies':'y'} added to library`);
+function pbAddToLibrary(newEntries) {
+  for (const e of newEntries) {
+    entries.push(e);
+    entryByKey.set(e.key, e);
   }
-  // Enable export button
+  closeModal('photo-batch-modal');
+  buildSidebarFilters();
+  runFilter();
+  toast(`${newEntries.length} entr${newEntries.length!==1?'ies':'y'} added to library`, 'success');
   const expBtn = document.getElementById('btn-export');
   if (expBtn) expBtn.disabled = false;
 }
@@ -3210,7 +3384,7 @@ async function callVisionAPI(imageFile, prompt) {
     r.readAsDataURL(imageFile);
   });
   const mediaType = imageFile.type || 'image/jpeg';
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -3290,7 +3464,8 @@ async function processSinglePhoto(file) {
   const thumb       = document.getElementById('photo-thumb');
   const resultText  = document.getElementById('photo-result-text');
 
-  // Show thumbnail immediately
+  // Show thumbnail immediately (revoke previous blob URL to avoid leaks)
+  if (thumb.src && thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
   thumb.src = URL.createObjectURL(file);
   previewRow.style.display = 'flex';
   statusEl.style.color = 'var(--text3)';
@@ -3435,7 +3610,7 @@ async function doiLookup() {
 }
 
 async function crossRefLookup(doi) {
-  const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+  const r = await fetchWithTimeout(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
   if (!r.ok) throw new Error('Not found in CrossRef');
   const j = await r.json();
   return j.message;
@@ -3509,7 +3684,7 @@ async function isbnLookup() {
 }
 
 async function openLibraryByIsbn(isbn) {
-  const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+  const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
   if (!r.ok) throw new Error('Open Library HTTP ' + r.status);
   const j = await r.json();
   const key = Object.keys(j)[0];
@@ -3556,7 +3731,7 @@ async function googleBooksIsbnLookup() {
 }
 
 async function googleBooksIsbn(isbn) {
-  const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
+  const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
   if (!r.ok) throw new Error('Google Books HTTP '+r.status);
   const j = await r.json();
   if (!j.items?.length) throw new Error('Not found in Google Books');
@@ -3572,7 +3747,7 @@ async function titleSearchOpenLibrary() {
   setFetchStatus('title','Searching Open Library…');
   try {
     const q = encodeURIComponent(title + (author?' '+author:''));
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
     if (!r.ok) throw new Error('Open Library HTTP '+r.status);
     const j = await r.json();
     if (!j.docs?.length) throw new Error('No results');
@@ -3610,7 +3785,7 @@ async function titleSearchGoogleBooks() {
   setFetchStatus('title','Searching Google Books…');
   try {
     const q = 'intitle:'+encodeURIComponent(title)+(author?'+inauthor:'+encodeURIComponent(author):'');
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     if (!r.ok) throw new Error('Google Books HTTP '+r.status);
     const j = await r.json();
     if (!j.items?.length) throw new Error('No results');
@@ -3720,18 +3895,19 @@ function saveDoiEntry() {
   if (!pendingDoiEntry) return;
   // Stamp provenance
   pendingDoiEntry.fields.datasource = 'crossref';
-  // Check for duplicate key
+  // Check for duplicate key (O(1) via entryByKey)
   let key = pendingDoiEntry.key;
   let suffix = 1;
-  while (entries.find(x=>x.key===key)) { key = pendingDoiEntry.key + String.fromCharCode(96+suffix); suffix++; }
+  while (entryByKey.has(key)) { key = pendingDoiEntry.key + autoSuffix(suffix); suffix++; }
   pendingDoiEntry.key = key;
-  entries.unshift(pendingDoiEntry);
+  entries.push(pendingDoiEntry);
+  entryByKey.set(key, pendingDoiEntry);
   selected = key;
   closeModal('doi-modal');
   document.getElementById('btn-export').disabled = false;
   buildSidebarFilters();
   runFilter();
-  const e = entries.find(x=>x.key===key);
+  const e = findEntry(key);
   document.getElementById('detail-content').style.display='flex';
   document.getElementById('detail-empty').style.display='none';
   showDetail(e);
@@ -3786,7 +3962,7 @@ async function autoLoadLibrary() {
   pb.style.display = 'block'; pb.style.width = '20%';
 
   try {
-    const response = await fetch(path, { cache: 'no-cache' });
+    const response = await fetchWithTimeout(path, { cache: 'no-cache' });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} — file not found at ${path}`);
@@ -3797,6 +3973,7 @@ async function autoLoadLibrary() {
     pb.style.width = '80%';
 
     entries = parseBibTeX(text);
+    rebuildEntryIndex();
     pb.style.width = '95%';
 
     selected = null; editing = null;
@@ -3809,7 +3986,7 @@ async function autoLoadLibrary() {
     spinner.style.display = 'none';
     statusEl.classList.add('ok');
     msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span>`;
-    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" data-action="triggerImport">load a different file</span>`;
 
     toast(`Auto-loaded ${entries.length.toLocaleString()} entries from ${label}.`, 'success');
 
@@ -3847,6 +4024,7 @@ function handleFileImport(input) {
     pb.style.width = '70%';
     try {
       entries = parseBibTeX(ev.target.result);
+      rebuildEntryIndex();
       pb.style.width = '90%';
       selected = null; editing = null;
       showLibrary();
@@ -3932,17 +4110,19 @@ async function fsSave() {
 // ════════════════════════════════════════════════════
 function duplicateEntry() {
   if (!selected) return;
-  const src = entries.find(x => x.key === selected);
+  const src = findEntry(selected);
   if (!src) return;
 
   // Deep copy fields, generate a new unique key
-  const newFields = JSON.parse(JSON.stringify(src.fields));
+  const newFields = (typeof structuredClone === 'function')
+    ? structuredClone(src.fields)
+    : JSON.parse(JSON.stringify(src.fields));
   let baseKey = src.key;
   // Strip any existing suffix letter (e.g. smithb → smith)
   let newKey = baseKey + 'b';
   let suffix = 2;
-  while (entries.find(x => x.key === newKey)) {
-    newKey = baseKey + String.fromCharCode(96 + suffix);
+  while (entryByKey.has(newKey)) {
+    newKey = baseKey + autoSuffix(suffix);
     suffix++;
   }
 
@@ -3950,6 +4130,7 @@ function duplicateEntry() {
   // Insert right after the original
   const idx = entries.findIndex(x => x.key === selected);
   entries.splice(idx + 1, 0, dupe);
+  entryByKey.set(newKey, dupe);
 
   selected = newKey;
   document.getElementById('btn-export').disabled = false;
@@ -3957,7 +4138,7 @@ function duplicateEntry() {
   runFilter();
 
   // Open in edit mode so user can immediately adjust the key/fields
-  const inserted = entries.find(x => x.key === newKey);
+  const inserted = findEntry(newKey);
   document.getElementById('detail-content').style.display = 'flex';
   document.getElementById('detail-empty').style.display = 'none';
   showDetail(inserted);
@@ -4004,17 +4185,18 @@ function openStatsModal() {
   const years = entries.map(e => parseInt(fmt(e,'year'))).filter(y => y > 1400 && y <= 2030);
   let yearHtml = '';
   if (years.length) {
-    const minY = Math.min(...years);
-    const maxY = Math.max(...years);
+    let minY = Infinity, maxY = -Infinity;
+    for (const y of years) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
     const span = maxY - minY || 1;
     const buckets = 24;
     const bucketSize = Math.ceil(span / buckets);
     const hist = Array(buckets).fill(0);
-    years.forEach(y => {
+    for (const y of years) {
       const b = Math.min(Math.floor((y - minY) / bucketSize), buckets-1);
       hist[b]++;
-    });
-    const maxH = Math.max(...hist);
+    }
+    let maxH = 0;
+    for (const h of hist) if (h > maxH) maxH = h;
     yearHtml = `
       <div class="stats-bar-section">
         <div class="stats-bar-title">Publication years (${minY}–${maxY})</div>
@@ -4056,7 +4238,7 @@ function openStatsModal() {
       <div class="stats-bar-title">By entry type</div>
       ${typesSorted.map(([t,c]) => `
         <div class="stats-bar-row">
-          <div class="stats-bar-label">${t}</div>
+          <div class="stats-bar-label">${escHtml(t)}</div>
           <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${Math.round(c/maxType*100)}%"></div></div>
           <div class="stats-bar-count">${c.toLocaleString()}</div>
         </div>`).join('')}
@@ -4066,7 +4248,7 @@ function openStatsModal() {
       <div class="stats-bar-title">By data source</div>
       ${dsSorted.map(([ds,c]) => `
         <div class="stats-bar-row">
-          <div class="stats-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual'}[ds]||ds}</div>
+          <div class="stats-bar-label">${escHtml({crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual'}[ds]||ds)}</div>
           <div class="stats-bar-track"><div class="stats-bar-fill blue" style="width:${Math.round(c/total*100)}%"></div></div>
           <div class="stats-bar-count">${c.toLocaleString()}</div>
         </div>`).join('')}
@@ -4137,6 +4319,10 @@ function fnrExecute() {
   if (!find) return;
 
   const needle = caseSen ? find : find.toLowerCase();
+  // Build regex once (M3) — was previously rebuilt per matched field.
+  const re = whole
+    ? null
+    : new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), caseSen?'g':'gi');
   let count = 0;
 
   entries.forEach(e => {
@@ -4144,6 +4330,7 @@ function fnrExecute() {
       ? Object.keys(e.fields)
       : field === 'journal' ? ['journal','booktitle'] : [field];
 
+    let mutated = false;
     fieldsToCheck.forEach(f => {
       const val = e.fields[f];
       if (!val) return;
@@ -4152,14 +4339,14 @@ function fnrExecute() {
         if (whole) {
           e.fields[f] = replace;
         } else {
-          // Case-insensitive replace
-          const re = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), caseSen?'g':'gi');
           e.fields[f] = val.replace(re, replace);
         }
         if (!e.fields[f]) delete e.fields[f];
         count++;
+        mutated = true;
       }
     });
+    if (mutated) invalidateEntryCache(e);
   });
 
   const resultsEl = document.getElementById('fnr-results');
@@ -4169,7 +4356,7 @@ function fnrExecute() {
 
   buildSidebarFilters();
   runFilter();
-  if (selected) { const e = entries.find(x=>x.key===selected); if(e) showDetail(e); }
+  if (selected) { const e = findEntry(selected); if(e) showDetail(e); }
   document.getElementById('btn-export').disabled = false;
   toast(`Find & Replace: ${count} field${count===1?'':'s'} updated.`, 'success');
   setToolbarStatus(`Find & Replace: ${count} fields updated`, 'ok');
@@ -4189,14 +4376,120 @@ function exportBib() {
   a.href = URL.createObjectURL(blob);
   a.download = 'library_export.bib';
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast(`Exported ${entries.length.toLocaleString()} entries.`,'success');
 }
 
 // ════════════════════════════════════════════════════
 //  MODAL HELPERS
 // ════════════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// ════════════════════════════════════════════════════
+//  FETCH WITH TIMEOUT (M12) — 15s default, AbortController-based.
+// ════════════════════════════════════════════════════
+const FETCH_TIMEOUT_MS = 15000;
+async function fetchWithTimeout(input, init = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: ctl.signal });
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      toast('Request timed out. Please try again.', 'error');
+      const e = new Error('Request timed out');
+      e.name = 'TimeoutError';
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('open');
+  // Focus trap: remember trigger, move focus inside, install trap
+  trapFocus(el, document.activeElement);
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('open');
+  releaseFocus(el);
+}
+
+// Confirm modal: replaces native confirm(). Returns a Promise<boolean>.
+function confirmDialog(message, { title = 'Confirm', okLabel = 'Confirm', cancelLabel = 'Cancel', danger = false } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-modal-message').textContent = message;
+    const okBtn = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    okBtn.textContent = okLabel;
+    cancelBtn.textContent = cancelLabel;
+    okBtn.classList.toggle('danger', !!danger);
+
+    const cleanup = (value) => {
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      closeModal('confirm-modal');
+      resolve(value);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const closeBtn = document.querySelector('#confirm-modal .modal-close');
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    openModal('confirm-modal');
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  FOCUS TRAP — accessibility for modals (M9)
+// ════════════════════════════════════════════════════
+const FOCUSABLE_SEL = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+const _focusTraps = new Map(); // modalEl -> { trigger, handler }
+
+function trapFocus(modalEl, triggerEl) {
+  // Move focus to first focusable inside the modal
+  const focusables = Array.from(modalEl.querySelectorAll(FOCUSABLE_SEL))
+    .filter(el => el.offsetParent !== null || el === document.activeElement);
+  const first = focusables[0];
+  if (first) {
+    // Defer so any opening transition / display change settles before focus
+    setTimeout(() => { try { first.focus(); } catch {} }, 0);
+  }
+
+  const handler = (e) => {
+    if (e.key !== 'Tab') return;
+    const current = Array.from(modalEl.querySelectorAll(FOCUSABLE_SEL))
+      .filter(el => el.offsetParent !== null);
+    if (!current.length) return;
+    const firstEl = current[0];
+    const lastEl = current[current.length - 1];
+    if (e.shiftKey && document.activeElement === firstEl) {
+      e.preventDefault();
+      lastEl.focus();
+    } else if (!e.shiftKey && document.activeElement === lastEl) {
+      e.preventDefault();
+      firstEl.focus();
+    }
+  };
+  modalEl.addEventListener('keydown', handler);
+  _focusTraps.set(modalEl, { trigger: triggerEl, handler });
+}
+
+function releaseFocus(modalEl) {
+  const entry = _focusTraps.get(modalEl);
+  if (!entry) return;
+  modalEl.removeEventListener('keydown', entry.handler);
+  _focusTraps.delete(modalEl);
+  // Return focus to the element that triggered the modal
+  if (entry.trigger && typeof entry.trigger.focus === 'function') {
+    try { entry.trigger.focus(); } catch {}
+  }
+}
 
 // ════════════════════════════════════════════════════
 //  TOAST
@@ -4303,7 +4596,7 @@ async function fetchAeaTree() {
 
   setStatus('fetching AEA tree…');
   try {
-    const r = await fetch('https://www.aeaweb.org/econlit/classificationTree.xml', {
+    const r = await fetchWithTimeout('https://www.aeaweb.org/econlit/classificationTree.xml', {
       mode: 'cors', cache: 'force-cache'
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -4311,6 +4604,8 @@ async function fetchAeaTree() {
     const parsed = parseAeaXml(xml);
     if (parsed.length < 20) throw new Error('parse failed — too few codes');
     aeaJelTree = parsed;
+    // M10: pre-tokenize descriptions once at load time, not per-suggestion-click
+    aeaJelTree.forEach(c => { c._tokens = tokenize(c.description); });
     setStatus(`AEA tree: ${parsed.length} codes`, 'var(--green)');
     return aeaJelTree;
   } catch(err) {
@@ -4318,7 +4613,7 @@ async function fetchAeaTree() {
     setStatus('using built-in (CORS blocked AEA)', 'var(--amber)');
     aeaJelTree = JEL
       .filter(([code]) => code.length >= 2)                  // skip single-letter headers
-      .map(([code, description]) => ({ code, description }));
+      .map(([code, description]) => ({ code, description, _tokens: tokenize(description) }));
     return aeaJelTree;
   }
 }
@@ -4354,11 +4649,12 @@ async function suggestJEL() {
   try {
     const tree = await fetchAeaTree();
 
-    // Score every leaf code (length ≥ 2) — prefer 3-char specificity
+    // Score every leaf code (length ≥ 2) — prefer 3-char specificity.
+    // Use cached _tokens (computed once at tree load) instead of re-tokenizing per click.
     const scored = tree
       .filter(c => c.code.length >= 2)
       .map(c => {
-        const descTokens = tokenize(c.description);
+        const descTokens = c._tokens || tokenize(c.description);
         let score = scoreDesc(descTokens, corpusTokenSet, corpusTokens);
         // Bonus for 3-char specificity
         if (c.code.length === 3) score *= 1.3;
@@ -4378,9 +4674,9 @@ async function suggestJEL() {
     } else {
       const rankLabels = ['1st', '2nd', '3rd'];
       chips.innerHTML = top3.map((c, i) => `
-        <div class="suggest-chip" id="jchip-${c.code}" onclick="acceptJelSuggestion('${c.code}', '${c.description.replace(/'/g,"\\'")}')">
-          <span class="suggest-chip-code">${c.code}</span>
-          <span class="suggest-chip-desc">${c.description}</span>
+        <div class="suggest-chip" id="jchip-${escHtml(c.code)}" role="button" tabindex="0" data-jel-code="${escHtml(c.code)}">
+          <span class="suggest-chip-code">${escHtml(c.code)}</span>
+          <span class="suggest-chip-desc">${escHtml(c.description)}</span>
           <span class="suggest-chip-rank">${rankLabels[i]}</span>
           <span class="suggest-chip-add">+ add</span>
         </div>`).join('');
@@ -4392,7 +4688,7 @@ async function suggestJEL() {
         : 'Source: ' + (aeaJelTree.length > 50 ? 'AEA EconLit tree' : 'built-in JEL table');
     }
   } catch(e) {
-    chips.innerHTML = `<span style="font-family:var(--mono);font-size: 12px;color:var(--red)">Error: ${e.message}</span>`;
+    chips.innerHTML = `<span style="font-family:var(--mono);font-size: 12px;color:var(--red)">Error: ${escHtml(e.message)}</span>`;
   }
 
   btn.disabled = false; btn.classList.remove('loading');
@@ -4463,7 +4759,13 @@ const LOC_EXTENDED = [
   ['Z',  'Bibliography, Library Science', 'bibliography library information cataloging archives reference'],
 ];
 
-const BOOK_TYPES = new Set(['book','inbook','incollection','proceedings']);
+const BOOK_TYPES = new Set(['book','inbook','incollection','inproceedings','proceedings']);
+
+// M10: pre-tokenize LOC descriptions+hints once at module load so suggestLOC()
+// doesn't re-tokenize on every click.
+const LOC_TOKENIZED = LOC_EXTENDED.map(([code, desc, hints]) => ({
+  code, desc, _tokens: tokenize(desc + ' ' + (hints || ''))
+}));
 
 function suggestLOC() {
   const btn = document.getElementById('loc-suggest-btn');
@@ -4497,9 +4799,8 @@ function suggestLOC() {
   const corpusTokens = tokenize(corpus);
   const corpusTokenSet = new Set(corpusTokens);
 
-  const scored = LOC_EXTENDED.map(([code, desc, hints]) => {
-    const descTokens = tokenize(desc + ' ' + (hints||''));
-    let score = scoreDesc(descTokens, corpusTokenSet, corpusTokens);
+  const scored = LOC_TOKENIZED.map(({ code, desc, _tokens }) => {
+    let score = scoreDesc(_tokens, corpusTokenSet, corpusTokens);
     // Prefer 2-letter subclasses over single-letter broad classes
     if (code.length === 2) score *= 1.4;
     return { code, desc, score };
@@ -4514,9 +4815,9 @@ function suggestLOC() {
   }
 
   chips.innerHTML = scored.map((c, i) => `
-    <div class="loc-suggest-chip" id="lchip-${c.code}" onclick="acceptLocSuggestion('${c.code}')">
-      <span class="loc-chip-code">${c.code}</span>
-      <span class="loc-chip-desc">${c.desc}</span>
+    <div class="loc-suggest-chip" id="lchip-${escHtml(c.code)}" role="button" tabindex="0" data-loc-code="${escHtml(c.code)}">
+      <span class="loc-chip-code">${escHtml(c.code)}</span>
+      <span class="loc-chip-desc">${escHtml(c.desc)}</span>
       <span class="loc-chip-add">apply</span>
     </div>`).join('');
 }
@@ -4558,6 +4859,18 @@ function onTypeChange() {
 function init() {
   initTheme();
 
+  // L17: Global delegated click handler for data-action attributes — replaces
+  // inline onclick="…" on toolbar buttons and other UI elements (CSP-friendly).
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const action = el.dataset.action;
+    const arg = el.dataset.arg;
+    const fn = window[action];
+    if (typeof fn !== 'function') return;
+    try { arg !== undefined ? fn(arg) : fn(); } catch (err) { console.error(err); }
+  });
+
   // Search debounce
   let debounce;
   document.getElementById('search').addEventListener('input', e => {
@@ -4567,6 +4880,75 @@ function init() {
 
   // Virtual scroll
   document.getElementById('list-scroll').addEventListener('scroll', renderVisible, {passive:true});
+
+  // Delegated click on entry rows (replaces inline onclick to prevent XSS via data values)
+  document.getElementById('list-items').addEventListener('click', e => {
+    const row = e.target.closest('.entry-row');
+    if (row && row.dataset.key) selectEntry(row.dataset.key);
+  });
+
+  // Delegated click on DOI value in detail panel
+  document.getElementById('detail-fields').addEventListener('click', e => {
+    const doiEl = e.target.closest('.field-value.doi');
+    if (doiEl && doiEl.dataset.doi) {
+      window.open('https://doi.org/' + encodeURI(doiEl.dataset.doi), '_blank', 'noopener,noreferrer');
+    }
+  });
+
+  // Promote clickable divs to keyboard-accessible buttons. Adding role/tabindex
+  // makes them focusable; a global Enter/Space handler synthesizes a click.
+  const a11yButtonSelector = '.tbtn, .detail-btn, .modal-close, .mobile-nav-btn, .fetch-tab, #bibtex-toggle, #theme-toggle, #detail-back-btn';
+  document.querySelectorAll(a11yButtonSelector).forEach(el => {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'SELECT') return;
+    if (t.getAttribute('role') !== 'button') return;
+    e.preventDefault();
+    t.click();
+  });
+
+  // Delegated click + keyboard on sidebar type filters
+  const typeFilters = document.getElementById('type-filters');
+  const handleTypeFilter = e => {
+    const opt = e.target.closest('.filter-opt');
+    if (!opt) return;
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.type === 'keydown') e.preventDefault();
+    setTypeFilter(opt.dataset.type || '');
+  };
+  typeFilters.addEventListener('click', handleTypeFilter);
+  typeFilters.addEventListener('keydown', handleTypeFilter);
+
+  // Delegated click + keyboard for JEL/LOC suggestion chips
+  const jelChips = document.getElementById('jel-suggestion-chips');
+  if (jelChips) {
+    const handleJel = e => {
+      const chip = e.target.closest('.suggest-chip');
+      if (!chip || !chip.dataset.jelCode) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      acceptJelSuggestion(chip.dataset.jelCode);
+    };
+    jelChips.addEventListener('click', handleJel);
+    jelChips.addEventListener('keydown', handleJel);
+  }
+  const locChips = document.getElementById('loc-suggestion-chips');
+  if (locChips) {
+    const handleLoc = e => {
+      const chip = e.target.closest('.loc-suggest-chip');
+      if (!chip || !chip.dataset.locCode) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      acceptLocSuggestion(chip.dataset.locCode);
+    };
+    locChips.addEventListener('click', handleLoc);
+    locChips.addEventListener('keydown', handleLoc);
+  }
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
@@ -4643,7 +5025,7 @@ function init() {
 
   // Build initial type filter
   const tf = document.getElementById('type-filters');
-  tf.innerHTML = `<div class="filter-opt active" onclick="setTypeFilter('')"><span>All</span><span class="count">0</span></div>`;
+  tf.innerHTML = `<div class="filter-opt active" data-type="" role="button" tabindex="0"><span>All</span><span class="count">0</span></div>`;
 
   // Wire LOC button state to entry-type selector in the edit form
   // (the form type selector is only in the DOM when editing, so use event delegation)
@@ -4669,7 +5051,12 @@ function init() {
     }
   });
 
-  console.log('BibForge v1.3 — Keyboard shortcuts:\n  Ctrl/Cmd+D  Quick add via DOI\n  Ctrl/Cmd+F  Focus search\n  Ctrl/Cmd+S  Save to file (or save entry while editing)\n  Ctrl/Cmd+H  Find & Replace\n  ↑↓          Navigate entries\n  Escape      Cancel / close\n\n  Toolbar: Save · Duplicate · Stats · Insights · Find & Replace · Shortcuts\n  Import: .bib file or .csv (with column mapping dialog)\n\n  Auto-load path: ' + (BIBFORGE_CONFIG.autoLoad || 'disabled — set BIBFORGE_CONFIG.autoLoad to enable'));
+  // Responsive sidebar + mobile panels
+  initResponsive();
+
+  // Attempt auto-load from configured repo path
+  autoLoadLibrary();
+}
 
 // ════════════════════════════════════════════════════
 //  CSV IMPORT — PARSE + COLUMN MAPPING
@@ -4703,31 +5090,75 @@ function csvAutoDetect(header) {
   return CSV_AUTO_MAP[norm] || null;
 }
 
+// RFC 4180-compliant CSV parser: handles quoted fields with embedded newlines
+// (L16) and preserves quoted-field whitespace (L19 — only unquoted fields are trimmed).
 function parseCSVText(text) {
-  const CRLF = text.includes('\r\n') ? '\r\n' : '\n';
-  const lines = text.split(CRLF).filter(l => l.trim());
-  if (lines.length < 2) throw new Error('CSV needs a header row and at least one data row');
-  const headers = parseCSVLine(lines[0]);
+  const records = parseCSVRecords(text);
+  if (records.length < 2) throw new Error('CSV needs a header row and at least one data row');
+  const headers = records[0];
   const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseCSVLine(lines[i]);
-    if (vals.every(v => !v.trim())) continue; // skip blank rows
+  for (let i = 1; i < records.length; i++) {
+    const vals = records[i];
+    if (vals.every(v => !v || !String(v).trim())) continue; // skip blank rows
     const obj = {};
-    headers.forEach((h,idx) => { obj[h] = (vals[idx] || '').trim(); });
+    headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
     rows.push(obj);
   }
   return { headers, rows };
 }
 
-function parseCSVLine(line) {
-  const out = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i], nx = line[i+1];
-    if (c === '"') { if (inQ && nx === '"') { cur += '"'; i++; } else { inQ = !inQ; } }
-    else if (c === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
-    else { cur += c; }
+// Single-pass character-state parser over the whole text — handles \n / \r\n
+// line endings, embedded newlines inside double-quoted fields, and "" escapes.
+// Returns an array of records (each a string[]). Unquoted fields are trimmed;
+// quoted fields keep their inner whitespace verbatim.
+function parseCSVRecords(text) {
+  const out = [];
+  let row = [];
+  let cur = '';
+  let inQ = false;       // inside quoted field
+  let fieldQuoted = false; // current field started with a quote
+  let fieldStarted = false;
+  const n = text.length;
+
+  const pushField = () => {
+    row.push(fieldQuoted ? cur : cur.trim());
+    cur = '';
+    fieldQuoted = false;
+    fieldStarted = false;
+  };
+  const pushRow = () => {
+    pushField();
+    out.push(row);
+    row = [];
+  };
+
+  for (let i = 0; i < n; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }   // escaped quote
+        else { inQ = false; }                            // end of quoted field
+      } else {
+        cur += c;
+      }
+      continue;
+    }
+    if (c === '"' && !fieldStarted) {
+      inQ = true;
+      fieldQuoted = true;
+      fieldStarted = true;
+      continue;
+    }
+    if (c === ',') { pushField(); continue; }
+    if (c === '\r') { /* skip — handled with \n */ continue; }
+    if (c === '\n') { pushRow(); continue; }
+    cur += c;
+    fieldStarted = true;
   }
-  out.push(cur.trim());
+  // Flush trailing field/row
+  if (cur.length > 0 || row.length > 0 || fieldQuoted) {
+    pushRow();
+  }
   return out;
 }
 
@@ -4798,6 +5229,8 @@ function executeCsvImport() {
   if (!csvParsedData) return;
   const { rows, mapping } = csvParsedData;
   const added = []; const renamedKeys = [];
+  // Pre-seed taken keys from existing library for O(1) collision lookup.
+  const takenKeys = new Set(entryByKey.keys());
 
   rows.forEach((row, idx) => {
     const entry = { type: 'article', key: '', fields: {} };
@@ -4820,14 +5253,17 @@ function executeCsvImport() {
     entry.fields.datasource = 'csv-import';
 
     let k = entry.key; let suf = 1;
-    const allKeys = new Set([...entries.map(e=>e.key), ...added.map(e=>e.key)]);
-    while (allKeys.has(k)) { k = entry.key + String.fromCharCode(96 + suf); suf++; }
+    while (takenKeys.has(k)) { k = entry.key + autoSuffix(suf); suf++; }
     if (k !== entry.key) renamedKeys.push(k);
     entry.key = k;
+    takenKeys.add(k);
     added.push(entry);
   });
 
-  entries.unshift(...added);
+  for (const e of added) {
+    entries.push(e);
+    entryByKey.set(e.key, e);
+  }
   closeModal('csv-mapping-modal');
   csvParsedData = null;
   document.getElementById('btn-export').disabled = false;
@@ -4905,7 +5341,7 @@ function renderInsightsOverview() {
     <div class="ins-section-title">Datasource Breakdown</div>
     ${Object.entries(sources).sort((a,b)=>b[1]-a[1]).map(([ds,c])=>
       `<div class="ins-bar-row">
-        <div class="ins-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import',manual:'Manual'}[ds]||ds}</div>
+        <div class="ins-bar-label">${escHtml({crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import',manual:'Manual','photo-barcode':'Photo (barcode)','photo-vision':'Photo (Vision)'}[ds]||ds)}</div>
         <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(c/total*100)}%"></div></div>
         <div class="ins-bar-count">${c.toLocaleString()}</div>
       </div>`).join('')}
@@ -4922,16 +5358,18 @@ function renderInsightsAge() {
   const sorted = [...ages].sort((a,b)=>a-b);
   const median = sorted[Math.floor(sorted.length/2)];
   const avg = (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1);
-  const oldest = Math.max(...ages);
-  const newest = Math.min(...ages);
+  let oldest = -Infinity, newest = Infinity;
+  for (const a of ages) { if (a > oldest) oldest = a; if (a < newest) newest = a; }
 
   // Year histogram — 20 buckets
-  const minY = Math.min(...years); const maxY = Math.max(...years);
+  let minY = Infinity, maxY = -Infinity;
+  for (const y of years) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
   const span = maxY - minY + 1; const buckets = Math.min(40, span);
   const bucketSize = span / buckets;
   const hist = new Array(buckets).fill(0);
-  years.forEach(y => { const b=Math.min(Math.floor((y-minY)/bucketSize), buckets-1); hist[b]++; });
-  const maxH = Math.max(...hist);
+  for (const y of years) { const b=Math.min(Math.floor((y-minY)/bucketSize), buckets-1); hist[b]++; }
+  let maxH = 0;
+  for (const h of hist) if (h > maxH) maxH = h;
 
   // Decade breakdown
   const decades = {};
@@ -4964,7 +5402,7 @@ function renderInsightsAuthors() {
   entries.forEach(e => {
     const a = fmt(e,'author') || fmt(e,'editor'); if (!a) return;
     a.split(/\s+and\s+/i).forEach(p => {
-      const sn = p.split(',')[0].trim().replace(/[{}\]/g,'');
+      const sn = p.split(',')[0].trim().replace(/[\[\]{}]/g,'');
       if (sn.length > 1) authorCount[sn] = (authorCount[sn]||0) + 1;
     });
   });
@@ -4982,7 +5420,7 @@ function renderInsightsAuthors() {
     </div>
     <div class="ins-section-title">Top Authors (by entry count)</div>
     ${top.map(([author,c])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label" title="${author}">${author}</div>
+      <div class="ins-bar-label" title="${escHtml(author)}">${escHtml(author)}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill" style="width:${Math.round(c/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${c}</div>
     </div>`).join('')}
@@ -5008,7 +5446,7 @@ function renderInsightsVenues() {
     </div>
     <div class="ins-section-title">Top Journals / Venues</div>
     ${top.map(([v,c])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label" title="${v}">${v.length>22?v.slice(0,22)+'…':v}</div>
+      <div class="ins-bar-label" title="${escHtml(v)}">${escHtml(v.length>22?v.slice(0,22)+'…':v)}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(c/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${c}</div>
     </div>`).join('')}
@@ -5044,13 +5482,13 @@ function renderInsightsJel() {
     </div>
     <div class="ins-section-title">Top JEL Codes</div>
     ${topJel.map(([c,n])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label"><span class="ins-jel-cell">${c}</span> <span style="font-size:12px;color:var(--text3)">${(JEL_MAP[c]||'').slice(0,28)}</span></div>
+      <div class="ins-bar-label"><span class="ins-jel-cell">${escHtml(c)}</span> <span style="font-size:12px;color:var(--text3)">${escHtml((JEL_MAP[c]||'').slice(0,28))}</span></div>
       <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(n/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${n}</div>
     </div>`).join('')}
     <div class="ins-section-title">Category Roll-up</div>
     ${topLetters.map(([l,n])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label">${l} — ${JEL_MAP[l]||''}</div>
+      <div class="ins-bar-label">${escHtml(l)} — ${escHtml(JEL_MAP[l]||'')}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill green" style="width:${Math.round(n/topLetters[0][1]*100)}%"></div></div>
       <div class="ins-bar-count">${n}</div>
     </div>`).join('')}
@@ -5096,14 +5534,6 @@ function renderInsightsQuality() {
       <div class="ins-bar-count">${pct}%</div>
     </div>`).join('')}
   `;
-}
-
-
-  // Responsive sidebar + mobile panels
-  initResponsive();
-
-  // Attempt auto-load from configured repo path
-  autoLoadLibrary();
 }
 
 // ════════════════════════════════════════════════════
