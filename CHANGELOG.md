@@ -5,6 +5,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3] — May 2026
+
+### Added
+- **Photo Import — Single Book** (`📷 Photo` fetch tab in the entry edit form):
+  Upload or drag-and-drop a cover or spine photo. ISBN barcodes are extracted
+  client-side via ZXing (`@zxing/browser@0.1.4`) — no API key required.
+  Extracted ISBN feeds directly into the existing Open Library → Google Books
+  lookup chain. When no barcode is present, Claude Vision (Anthropic API,
+  user-supplied key) reads cover/spine text and routes to title search or
+  ISBN lookup automatically.
+- **Photo Batch Import** (new `Photo Batch` header button + modal):
+  Upload a shelf or fanned-stack photo showing multiple book spines. Claude Vision
+  extracts the full spine inventory as a structured list. A three-stage modal guides
+  the workflow: (1) upload and Vision analysis, (2) editable review table with
+  per-row include/exclude toggles (uncertain readings highlighted in amber),
+  (3) batch API lookup with per-entry progress. Results can be added directly to
+  the in-memory library or downloaded as `photo-import.bib`. Unresolved entries
+  export as `photo-batch-residuals.txt` in the standard `needs_manual_scan.txt`
+  tier format.
+- **API Key Modal** — Lightweight session-only Anthropic key entry triggered
+  automatically on first Vision request. Key stored in `sessionStorage` only;
+  cleared on tab close; never written to `localStorage` or transmitted anywhere
+  except `api.anthropic.com`.
+- **New `datasource` values**: `photo-barcode` (ISBN from barcode) and
+  `photo-vision` (title/author via Claude Vision). Both appear in the sidebar
+  Data Source filter and Library Insights datasource breakdown with distinct
+  colour badges.
+
+### Dependencies
+- `@zxing/browser@0.1.4` added via CDN (`cdn.jsdelivr.net`) for client-side
+  barcode decoding. No new runtime dependencies for the non-Vision path.
+
+---
+
 ## [v1.0] — March 2026
 
 ### Added

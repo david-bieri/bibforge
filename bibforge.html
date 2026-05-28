@@ -19,6 +19,8 @@
 <script data-goatcounter="https://bibforge.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<!-- ZXing barcode decoding (client-side ISBN extraction from photos) -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js"></script>
 <style>
 :root {
   --bg:       #0d0c0a;
@@ -73,7 +75,6 @@
 :root.light .type-techreport   { background:#e8dcc0; }
 :root.light .type-phdthesis    { background:#e8d0d8; }
 :root.light .type-working      { background:#e8ddc0; }
-:root.light .type-archival     { background:#e4d8f0; }
 :root.light .drop-zone { border-color: var(--border2); }
 :root.light .suggest-strip { background: var(--surface2); }
 :root.light .suggest-chip  { background: var(--surface3); }
@@ -249,7 +250,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   #logo { font-size: 18px; }
   #entry-count { display: none; }
   #search-wrap { max-width: none; flex: 1; }
-  #btn-import, #btn-import-csv, #btn-new { display: none !important; }
+  #btn-import, #btn-import-csv, #btn-new, #btn-photo-batch { display: none !important; }
 
   /* Toolbar hides on mobile — actions go to bottom nav */
   #toolbar { display: none !important; }
@@ -318,6 +319,15 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
   /* Bigger touch targets for detail buttons */
   .detail-btn { padding: 10px 6px; font-size: 13px; }
+
+  /* Photo batch modal — collapse table on narrow screens */
+  .pb-col-author, .pb-col-isbn { display: none; }
+  #pb-review-table th:nth-child(4), #pb-review-table th:nth-child(5) { display: none; }
+  #pb-thumb { max-height: 80px; }
+  .photo-upload-zone { padding: 20px 10px; }
+
+  /* Mobile nav: 6-button layout — tighten font */
+  .mobile-nav-btn { font-size: 9px; }
 }
 
 /* Always hide these by default — shown via JS on mobile */
@@ -397,7 +407,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .type-techreport { background: #252218; color: #b8943a; }
 .type-phdthesis { background: #2a1a25; color: #c87898; }
 .type-working  { background: #252018; color: #c89868; }
-.type-archival { background: #1e1a2a; color: #a07adc; }
 .type-default  { background: var(--surface3); color: var(--text3); }
 
 .row-main { flex: 1; min-width: 0; }
@@ -408,18 +417,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .row-venue { font-size: 13px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; font-style: italic; }
 .row-jel { font-family: var(--mono); font-size: 12px; color: var(--blue); }
 .row-key { font-family: var(--mono); font-size: 12px; color: var(--text3); }
-.row-access {
-  font-family: var(--mono); font-size: 10px; padding: 1px 5px;
-  border-radius: 2px; text-transform: uppercase; letter-spacing: .04em; flex-shrink: 0;
-}
-.row-access.restricted    { background: #2a1818; color: var(--red); border: 1px solid #48282a; }
-.row-access.digitized     { background: #1a2835; color: var(--blue); border: 1px solid #2a3a48; }
-.row-access.by-appointment { background: #25201a; color: var(--amber); border: 1px solid #48381a; }
-.row-access.open          { background: #1e2a22; color: var(--green); border: 1px solid #2a3a2a; }
-:root.light .row-access.restricted     { background: #f8e0e0; border-color: #d08080; }
-:root.light .row-access.digitized      { background: #d0e0ea; border-color: #a0c0d8; }
-:root.light .row-access.by-appointment { background: #f0e8d0; border-color: #c8a850; }
-:root.light .row-access.open           { background: #d0e8d8; border-color: #80b090; }
 
 /* ── DETAIL PANEL ── */
 #detail {
@@ -485,21 +482,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   background: var(--surface2); border-top: 1px solid var(--border);
 }
 #bibtex-raw.open { display: block; }
-
-/* ── CHICAGO NB PANE ── */
-#chicago-pane {
-  border-top: 1px solid var(--border); flex-shrink: 0;
-  display: flex; flex-direction: column;
-}
-#chicago-toggle {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 14px; cursor: pointer; user-select: none;
-  font-family: var(--mono); font-size: 12px; color: var(--text3);
-  transition: color .15s, background .15s;
-}
-#chicago-toggle:hover { color: var(--amber); background: var(--surface2); }
-#chicago-toggle-arrow { font-size: 11px; transition: transform .2s; }
-#chicago-toggle-arrow.open { transform: rotate(180deg); }
 
 #bibtex-raw pre {
   font-family: var(--mono); font-size: 13px; line-height: 1.7;
@@ -756,6 +738,15 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 .fetch-panel { display: none; flex-direction: column; gap: 6px; }
 .fetch-panel.active { display: flex; }
+.photo-upload-zone {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 1.5px dashed var(--border2); border-radius: var(--radius);
+  padding: 14px 10px; cursor: pointer; width: 100%; box-sizing: border-box;
+  color: var(--text3); font-size: 13px; transition: border-color .15s, color .15s;
+}
+.photo-upload-zone:hover, .photo-upload-zone.drag-over {
+  border-color: var(--blue); color: var(--blue);
+}
 
 .fetch-row { display: flex; gap: 6px; align-items: center; }
 .fetch-row .form-input { flex: 1; }
@@ -776,19 +767,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .fetch-btn.worldcat { background: var(--surface3); border-color: var(--border2); color: var(--text2); }
 .fetch-btn.worldcat:hover { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
 :root.light .fetch-btn.worldcat { background: var(--surface3); }
-.fetch-btn.archive-ia { background: #1e1a2a; border-color: #7a5aac; color: #a07adc; }
-.fetch-btn.archive-ia:hover { background: #7a5aac; color: var(--bg); }
-:root.light .fetch-btn.archive-ia { background: #e4d8f0; }
-
-/* Archive search result cards */
-.archive-result-card {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 7px 9px; cursor: pointer; transition: border-color .15s;
-}
-.archive-result-card:hover { border-color: #7a5aac; }
-.archive-result-title { font-size: 13.5px; color: var(--text); line-height: 1.4; }
-.archive-result-meta  { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
-.archive-result-apply { font-family: var(--mono); font-size: 11px; color: #a07adc; margin-top: 3px; }
 .fetch-btn:disabled { opacity: .45; cursor: not-allowed; }
 .fetch-status { font-family: var(--mono); font-size: 12px; color: var(--text3); min-height: 14px; }
 .fetch-status.ok  { color: var(--green); }
@@ -805,14 +783,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .datasource-badge.openlibrary { background: #1e2e1e; border-color: var(--green); color: var(--green); }
 .datasource-badge.googlebooks { background: #1a2a24; border-color: #4a8a68; color: #4a8a68; }
 .datasource-badge.manual      { background: var(--surface3); border-color: var(--border2); color: var(--text3); }
-.datasource-badge.archive-visit { background: #1e1a2a; border-color: #7a5aac; color: #a07adc; }
-.datasource-badge.csv-import  { background: #1e2218; border-color: #6a8a50; color: #8ab870; }
+.datasource-badge.photo-barcode { background: #1e1e2e; border-color: #7c6af5; color: #9d8fff; }
+.datasource-badge.photo-vision  { background: #1e1a2e; border-color: #a06af5; color: #c49fff; }
 :root.light .datasource-badge.openlibrary { background:#d0e8d8; }
 :root.light .datasource-badge.googlebooks { background:#d0e4da; }
 :root.light .datasource-badge.crossref    { background: var(--blue-dim); }
 :root.light .datasource-badge.manual      { background: var(--surface3); }
-:root.light .datasource-badge.archive-visit { background: #e4d8f0; border-color: #a07adc; color: #6a3aac; }
-:root.light .datasource-badge.csv-import  { background: #d8ead8; border-color: #6a8a50; color: #3a6020; }
+:root.light .datasource-badge.photo-barcode { background: #ebe8ff; }
+:root.light .datasource-badge.photo-vision  { background: #f0e8ff; }
 
 /* ── THEME TOGGLE ── */
 .theme-toggle {
@@ -941,7 +919,7 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         <line x1="5" y1="13" x2="9" y2="13" stroke="#c8973a" stroke-width="1.2"/>
       </svg>
       BibForge
-      <span>— academic reference manager · v1.2</span>
+      <span>— academic reference manager · v1.3</span>
     </div>
 
     <!-- Sidebar toggle (tablet/mobile) -->
@@ -976,7 +954,14 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.1"/><line x1="4" y1="5" x2="4" y2="10" stroke="currentColor" stroke-width="1.1"/></svg>
       Import .csv
     </button>
-    <button class="hbtn primary" id="btn-export" onclick="exportBib()" disabled>
+    <button class="hbtn" id="btn-photo-batch" onclick="openPhotoBatch()" title="Import multiple books from a shelf or stack photo (requires Anthropic API key for Vision)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Photo Batch
+    </button>
+        <button class="hbtn primary" id="btn-export" onclick="exportBib()" disabled>
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 8V2M3.5 4l2.5-2.5L8.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M1 9h10v1.5H1z" fill="currentColor" opacity=".5"/></svg>
       Export .bib
     </button>
@@ -1119,19 +1104,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           <option value="openlibrary">Open Library</option>
           <option value="googlebooks">Google Books</option>
           <option value="csv-import">CSV Import</option>
-          <option value="archive-visit">Archive Visit</option>
+          <option value="photo-barcode">Photo (barcode)</option>
+          <option value="photo-vision">Photo (Vision)</option>
           <option value="manual">Manual / unknown</option>
-        </select>
-      </div>
-
-      <div class="sb-section" id="access-filter-section" style="display:none;">
-        <div class="sb-title">Archive Access</div>
-        <select class="sb-select" id="access-filter" onchange="applyFilters()">
-          <option value="">All access types</option>
-          <option value="open">Open</option>
-          <option value="digitized">Digitized</option>
-          <option value="by-appointment">By Appointment</option>
-          <option value="restricted">Restricted</option>
         </select>
       </div>
 
@@ -1241,26 +1216,6 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
             <pre id="bibtex-raw-content"></pre>
           </div>
         </div>
-
-        <!-- Chicago NB collapsible pane -->
-        <div id="chicago-pane">
-          <div id="chicago-toggle" onclick="toggleChicagoPane()" title="Show/hide Chicago Notes-Bibliography citation">
-            <span>
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:5px">
-                <path d="M2 3h8M2 6h6M2 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-              </svg>
-              Chicago NB Citation
-            </span>
-            <span id="chicago-toggle-arrow">▲</span>
-          </div>
-          <div id="chicago-raw" style="display:none;">
-            <div id="chicago-raw-content" style="font-family:var(--serif);font-size:13.5px;line-height:1.7;color:var(--text2);padding:10px 14px 14px;background:var(--surface2);border-top:1px solid var(--border);"></div>
-            <div style="padding:0 14px 10px;display:flex;gap:6px;">
-              <button class="fetch-btn worldcat" style="font-size:12px;padding:3px 10px;" onclick="copyChicago()">Copy citation</button>
-              <span id="chicago-copy-status" style="font-family:var(--mono);font-size:12px;color:var(--green);align-self:center;"></span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Edit form (inside detail panel) -->
@@ -1270,10 +1225,10 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
 
           <!-- Source tabs -->
           <div class="fetch-tabs">
-            <div class="fetch-tab active" id="ftab-doi"     onclick="switchFetchTab('doi')">DOI / CrossRef</div>
-            <div class="fetch-tab"        id="ftab-isbn"    onclick="switchFetchTab('isbn')">ISBN / Open Library</div>
-            <div class="fetch-tab"        id="ftab-title"   onclick="switchFetchTab('title')">Title Search</div>
-            <div class="fetch-tab"        id="ftab-archive" onclick="switchFetchTab('archive')">Archival Search</div>
+            <div class="fetch-tab active" id="ftab-doi"    onclick="switchFetchTab('doi')">DOI / CrossRef</div>
+            <div class="fetch-tab"        id="ftab-isbn"   onclick="switchFetchTab('isbn')">ISBN / Open Library</div>
+            <div class="fetch-tab"        id="ftab-title"  onclick="switchFetchTab('title')">Title Search</div>
+            <div class="fetch-tab"        id="ftab-photo"  onclick="switchFetchTab('photo')">📷 Photo</div>
           </div>
 
           <!-- Panel: DOI → CrossRef -->
@@ -1316,19 +1271,25 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
             <div class="fetch-status" id="title-status"></div>
           </div>
 
-          <!-- Panel: Archival Search (Internet Archive + DPLA/Europeana link-outs) -->
-          <div class="fetch-panel" id="fpanel-archive">
-            <div class="fetch-row">
-              <input class="form-input" id="archive-search-input" placeholder="Title, creator, or subject keywords" autocomplete="off">
-              <button class="fetch-btn archive-ia" id="archive-ia-btn" onclick="archiveOrgSearch()">Internet Archive ↗</button>
+
+          <!-- Panel: Photo Import — barcode scan + Vision fallback -->
+          <div class="fetch-panel" id="fpanel-photo">
+            <label class="photo-upload-zone" id="photo-upload-zone" for="photo-file-input"
+                   ondragover="photoDragOver(event)" ondrop="photoDropSingle(event)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span id="photo-upload-label">Drop cover or spine photo here, or click to browse</span>
+              <span style="font-size:11px;color:var(--text3);">Barcodes decoded locally · No API key required for ISBN photos</span>
+              <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none"
+                     onchange="handleSinglePhotoUpload(event)">
+            </label>
+            <div id="photo-preview-row" style="display:none;gap:10px;align-items:flex-start;margin-top:6px;">
+              <img id="photo-thumb" style="width:56px;height:74px;object-fit:cover;border:1px solid var(--border);border-radius:4px;flex-shrink:0;">
+              <div style="flex:1;font-size:12px;color:var(--text2);line-height:1.6;" id="photo-result-text"></div>
             </div>
-            <div class="fetch-row" style="margin-top:2px;">
-              <span class="fetch-hint" style="flex:1">Digitized primary sources, govt docs, serials</span>
-              <button class="fetch-btn worldcat" onclick="openDPLA()" title="Open DPLA — free API key required for programmatic access">DPLA ↗</button>
-              <button class="fetch-btn worldcat" onclick="openEuropeana()" title="Open Europeana — aggregates European cultural heritage">Europeana ↗</button>
-            </div>
-            <div class="fetch-status" id="archive-status"></div>
-            <div id="archive-results" style="display:none;margin-top:8px;display:none;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+            <div class="fetch-status" id="photo-status"></div>
           </div>
 
           <!-- Datasource provenance display (read-only, set by fetch functions) -->
@@ -1355,7 +1316,6 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
                 <option value="misc">misc</option>
                 <option value="unpublished">unpublished</option>
                 <option value="working">working paper</option>
-                <option value="archival">archival</option>
               </select>
             </div>
           </div>
@@ -1459,82 +1419,8 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
           </div>
         </div>
 
-        <!-- ARCHIVAL SOURCE SECTION — shown/hidden based on entry type -->
-        <div class="form-section" id="archival-section" style="display:none;">
-          <div class="form-section-title">Archival Source</div>
-          <div class="form-grid full">
-            <div class="form-group">
-              <label class="form-label">Repository</label>
-              <input class="form-input" id="f-repository" placeholder="e.g. National Archives, NARA">
-            </div>
-          </div>
-          <div class="form-grid full" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Collection / Record Group</label>
-              <input class="form-input" id="f-collection" placeholder="e.g. Record Group 56, General Records of the Treasury">
-            </div>
-          </div>
-          <div class="form-grid" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Box</label>
-              <input class="form-input mono" id="f-box" placeholder="42">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Folder</label>
-              <input class="form-input mono" id="f-folder" placeholder="12">
-            </div>
-          </div>
-          <div class="form-grid" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Item / Document</label>
-              <input class="form-input mono" id="f-item" placeholder="Letter dated 1923-04-15">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Call Number</label>
-              <input class="form-input mono" id="f-call-number" placeholder="Archive finding-aid ID">
-            </div>
-          </div>
-          <div class="form-grid" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Date Range</label>
-              <input class="form-input mono" id="f-date-range" placeholder="1923--1947">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Access Status</label>
-              <select class="form-select" id="f-access">
-                <option value="">— select —</option>
-                <option value="open">Open</option>
-                <option value="restricted">Restricted</option>
-                <option value="digitized">Digitized</option>
-                <option value="by-appointment">By Appointment</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-grid full" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Finding Aid URL</label>
-              <input class="form-input mono" id="f-finding-aid-url" placeholder="https://...">
-            </div>
-          </div>
-          <div class="form-grid" style="margin-top:8px;">
-            <div class="form-group">
-              <label class="form-label">Visit Date</label>
-              <input class="form-input mono" id="f-visit-date" placeholder="2025-03-14">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Access Note</label>
-              <input class="form-input" id="f-access-note" placeholder="Permission granted by archivist">
-            </div>
-          </div>
-          <!-- Archive link-outs -->
-          <div class="fetch-row" style="margin-top:12px;gap:6px;">
-            <span style="font-family:var(--mono);font-size:11px;color:var(--text3);flex:1;">Search external archives:</span>
-            <button class="fetch-btn worldcat" onclick="openArchiveGrid()" title="Search ArchiveGrid for this collection">ArchiveGrid ↗</button>
-            <button class="fetch-btn worldcat" onclick="openSNAC()" title="Search SNAC for creator/corporate name authority">SNAC ↗</button>
-          </div>
-        </div>
-
         <div class="form-section">
+          <div class="form-section-title">Classification</div>
 
           <!-- JEL Picker -->
           <div class="form-group" style="margin-bottom:10px;">
@@ -1656,10 +1542,124 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       </svg>
       Save
     </div>
+    <div class="mobile-nav-btn" id="mnav-photo" onclick="openPhotoBatch()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 15.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 1 15.5V7a1.5 1.5 0 0 1 1.5-1.5h3L7 3.5h6l1.5 2H18.5A1.5 1.5 0 0 1 20 7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <circle cx="10" cy="11" r="2.8" stroke="currentColor" stroke-width="1.4" fill="none"/>
+      </svg>
+      Photo
+    </div>
   </nav>
 </div><!-- /app -->
 
 <!-- NEW ENTRY MODAL (DOI shortcut from header) -->
+
+
+<!-- ── Photo Batch Import Modal ───────────────────────────────────────── -->
+<div class="modal-overlay" id="photo-batch-modal">
+  <div class="modal" style="width:700px;max-height:88vh;">
+    <div class="modal-header">
+      <div class="modal-title">Photo Batch Import</div>
+      <div class="modal-close" onclick="closeModal('photo-batch-modal')">✕</div>
+    </div>
+    <div class="modal-body" id="photo-batch-body" style="gap:10px;">
+
+      <!-- Stage 1: Upload -->
+      <div id="pb-stage-upload">
+        <label class="photo-upload-zone" id="pb-upload-zone" for="pb-file-input"
+               style="padding:28px 16px;"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="pbHandleDrop(event)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span style="font-size:14px;">Drop a shelf or stack photo here, or click to browse</span>
+          <span style="font-size:11px;color:var(--text3);">Claude Vision reads every visible spine · Requires Anthropic API key</span>
+          <input type="file" id="pb-file-input" accept="image/*" capture="environment" style="display:none"
+                 onchange="pbHandleUpload(event)">
+        </label>
+        <div id="pb-upload-status" style="font-size:13px;color:var(--text2);text-align:center;min-height:18px;margin-top:6px;"></div>
+      </div>
+
+      <!-- Stage 2: Review table -->
+      <div id="pb-stage-review" style="display:none;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <img id="pb-thumb" style="height:100px;max-width:90px;object-fit:cover;border:1px solid var(--border);border-radius:4px;flex-shrink:0;">
+          <div style="flex:1;">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">
+              Review and correct the titles found. Uncheck any book to skip it.
+            </div>
+            <div style="font-size:12px;color:var(--text3);">
+              Titles ending with <strong>?</strong> were unclear in the photo — please verify.
+            </div>
+          </div>
+        </div>
+        <div style="overflow-y:auto;max-height:280px;border:1px solid var(--border);border-radius:var(--radius);">
+          <table id="pb-review-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead style="position:sticky;top:0;background:var(--surface2);z-index:1;">
+              <tr style="border-bottom:1px solid var(--border);color:var(--text3);">
+                <th style="padding:5px 8px;text-align:center;width:28px;font-weight:500;">✓</th>
+                <th style="padding:5px 8px;text-align:left;width:22px;font-weight:500;">#</th>
+                <th style="padding:5px 8px;text-align:left;font-weight:500;">Title</th>
+                <th class="pb-col-author" style="padding:5px 8px;text-align:left;font-weight:500;">Author</th>
+                <th class="pb-col-isbn" style="padding:5px 8px;text-align:left;width:120px;font-weight:500;">ISBN</th>
+              </tr>
+            </thead>
+            <tbody id="pb-review-tbody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:12px;color:var(--text2);">Shelf tag (applied to all):</label>
+          <input class="form-input mono" id="pb-shelf-tag" placeholder="e.g. XIV-A"
+                 style="width:110px;font-size:12px;padding:4px 8px;">
+          <span style="font-size:11px;color:var(--text3);">Edit individually in each entry after import</span>
+        </div>
+      </div>
+
+      <!-- Stage 3: Results -->
+      <div id="pb-stage-results" style="display:none;flex-direction:column;gap:6px;">
+        <div id="pb-progress-label" style="font-size:13px;color:var(--text2);font-weight:500;"></div>
+        <div id="pb-results-list" style="display:flex;flex-direction:column;gap:4px;max-height:360px;overflow-y:auto;"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer" id="photo-batch-footer">
+      <button class="modal-btn secondary" onclick="pbClose()">Close</button>
+      <button class="modal-btn primary" id="pb-action-btn" style="display:none;" onclick=""></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── API Key Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="apikey-modal">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">Anthropic API Key</div>
+      <div class="modal-close" onclick="closeModal('apikey-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);line-height:1.55;margin:0 0 10px;">
+        Required for Vision-powered features (spine text recognition, multi-spine batch import).
+        Stored in <strong>session memory only</strong> — cleared when you close this tab.
+        Never written to disk or transmitted anywhere except <code style="font-size:12px;">api.anthropic.com</code>.
+      </p>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input class="form-input mono" id="apikey-input" type="password"
+               placeholder="sk-ant-…" autocomplete="off" style="font-size:13px;"
+               onkeydown="if(event.key==='Enter') saveApiKey()">
+      </div>
+      <div id="apikey-status" style="font-size:12px;color:var(--text3);min-height:16px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" onclick="closeModal('apikey-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveApiKey()">Save for Session</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="doi-modal">
   <div class="modal" style="width:440px;">
     <div class="modal-header">
@@ -1776,12 +1776,6 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
         <tr><td>Export .bib</td><td>Download full library as .bib file</td></tr>
         <tr><td>Drag &amp; drop</td><td>Import .bib file onto the landing screen</td></tr>
         <tr><td>Import .csv</td><td>Import CSV with header mapping dialog</td></tr>
-        <tr><td colspan="2" class="shortcut-section">Archival Research</td></tr>
-        <tr><td>ArchiveGrid ↗</td><td>Search OCLC ArchiveGrid for repository/collection (edit form + detail view)</td></tr>
-        <tr><td>SNAC ↗</td><td>Search Social Networks and Archival Context for name authority</td></tr>
-        <tr><td>Archive Access filter</td><td>Sidebar filter for open / digitized / restricted / by-appointment (appears when archival entries are loaded)</td></tr>
-        <tr><td>Archival Search tab</td><td>Fetch from Internet Archive API; link-outs to DPLA and Europeana</td></tr>
-        <tr><td>Chicago NB pane</td><td>Formatted Chicago Notes-Bibliography citation — collapsible in detail view, copy button</td></tr>
         <tr><td colspan="2" class="shortcut-section">Analytics</td></tr>
         <tr><td>Insights button</td><td>6-tab library analytics (Age, Authors, Venues, JEL, Quality)</td></tr>
       </table>
@@ -2138,9 +2132,7 @@ function entryToBibTeX(e) {
   const lines = [`@${e.type}{${e.key},`];
   const order = ['author','editor','title','booktitle','journal','year','volume','number','pages',
     'publisher','address','edition','series','school','institution','type',
-    'doi','isbn','issn','url','jel','lcc','keywords','abstract','note',
-    'repository','collection','box','folder','item','call_number','date_range',
-    'access','finding_aid_url','visit_date','access_note','datasource'];
+    'doi','isbn','issn','url','jel','lcc','keywords','abstract','note'];
   const written = new Set();
   for (const f of order) {
     if (e.fields[f] !== undefined && e.fields[f] !== '') {
@@ -2175,9 +2167,6 @@ function getAuthors(e) {
 }
 
 function getVenue(e) {
-  if (e.type === 'archival') {
-    return fmt(e,'repository') || fmt(e,'collection') || '';
-  }
   return fmt(e,'journal') || fmt(e,'booktitle') || fmt(e,'publisher') || fmt(e,'institution') || fmt(e,'school') || '';
 }
 
@@ -2187,7 +2176,7 @@ function typeClass(t) {
   const m = { article:'type-article', book:'type-book', inbook:'type-inbook',
     incollection:'type-incollection', inproceedings:'type-inproceedings',
     misc:'type-misc', techreport:'type-techreport', phdthesis:'type-phdthesis',
-    unpublished:'type-working', working:'type-working', archival:'type-archival' };
+    unpublished:'type-working', working:'type-working' };
   return m[t] || 'type-default';
 }
 
@@ -2208,16 +2197,12 @@ let filterLOC  = '';
 let filterYearFrom = '';
 let filterYearTo   = '';
 let filterDatasource = '';
-let filterAccess   = '';
 let sortMode   = 'year-desc';
 
 function getSearchable(e) {
   return [e.key, fmt(e,'title'), fmt(e,'author'), fmt(e,'year'),
     fmt(e,'journal'), fmt(e,'booktitle'), fmt(e,'doi'), fmt(e,'jel'),
-    fmt(e,'keywords'), fmt(e,'datasource'),
-    fmt(e,'repository'), fmt(e,'collection'), fmt(e,'call_number'),
-    fmt(e,'date_range'), fmt(e,'visit_date'), fmt(e,'access_note')
-  ].join(' ').toLowerCase();
+    fmt(e,'keywords'), fmt(e,'datasource')].join(' ').toLowerCase();
 }
 
 function applyFilters() {
@@ -2226,7 +2211,6 @@ function applyFilters() {
   filterJEL        = document.getElementById('jel-filter').value;
   filterLOC        = document.getElementById('loc-filter').value;
   filterDatasource = document.getElementById('datasource-filter').value;
-  filterAccess     = document.getElementById('access-filter').value;
   runFilter();
 }
 
@@ -2234,26 +2218,9 @@ function runFilter() {
   const q = searchQ.toLowerCase();
   filtered = entries.filter(e => {
     if (filterType && e.type !== filterType) return false;
-
-    // Year / date-range filtering — archival entries may use date_range (e.g. "1923--1947")
-    if (filterYearFrom || filterYearTo) {
-      const from = filterYearFrom ? parseInt(filterYearFrom) : -Infinity;
-      const to   = filterYearTo   ? parseInt(filterYearTo)   :  Infinity;
-      const dr   = fmt(e, 'date_range');
-      if (dr) {
-        // Parse date_range: "1923--1947" or "1923-1947" or "1923"
-        const parts = dr.split(/--|-/).map(s => parseInt(s)).filter(n => !isNaN(n));
-        const rangeStart = parts[0] || 0;
-        const rangeEnd   = parts[1] || rangeStart;
-        // Include if ranges overlap
-        if (rangeEnd < from || rangeStart > to) return false;
-      } else {
-        const yr = parseInt(fmt(e,'year')) || 0;
-        if (filterYearFrom && yr < from) return false;
-        if (filterYearTo   && yr > to)   return false;
-      }
-    }
-
+    const yr = parseInt(fmt(e,'year')) || 0;
+    if (filterYearFrom && yr < parseInt(filterYearFrom)) return false;
+    if (filterYearTo   && yr > parseInt(filterYearTo))   return false;
     if (filterJEL && !fmt(e,'jel').includes(filterJEL)) return false;
     if (filterLOC && !fmt(e,'lcc').startsWith(filterLOC)) return false;
     if (filterDatasource) {
@@ -2264,28 +2231,18 @@ function runFilter() {
         if (ds !== filterDatasource) return false;
       }
     }
-    if (filterAccess) {
-      if (fmt(e,'access') !== filterAccess) return false;
-    }
     if (q && !getSearchable(e).includes(q)) return false;
     return true;
   });
   applySort(false);
 }
 
-function getSortYear(e) {
-  if (e.type === 'archival' && fmt(e,'date_range')) {
-    return parseInt(fmt(e,'date_range').split(/--|-/)[0]) || 0;
-  }
-  return parseInt(fmt(e,'year')) || 0;
-}
-
 function applySort(rerun = true) {
   sortMode = document.getElementById('sort-select').value;
   filtered.sort((a, b) => {
     switch(sortMode) {
-      case 'year-desc': return getSortYear(b) - getSortYear(a);
-      case 'year-asc':  return getSortYear(a) - getSortYear(b);
+      case 'year-desc': return (parseInt(fmt(b,'year'))||0) - (parseInt(fmt(a,'year'))||0);
+      case 'year-asc':  return (parseInt(fmt(a,'year'))||0) - (parseInt(fmt(b,'year'))||0);
       case 'author-asc':  return getAuthors(a).localeCompare(getAuthors(b));
       case 'author-desc': return getAuthors(b).localeCompare(getAuthors(a));
       case 'title-asc':   return stripBraces(fmt(a,'title')).localeCompare(stripBraces(fmt(b,'title')));
@@ -2337,7 +2294,6 @@ function renderVisible() {
   for (let i = startI; i <= endI; i++) {
     const e = filtered[i];
     const jel = fmt(e,'jel');
-    const access = e.type === 'archival' ? fmt(e,'access') : '';
     const sel = e.key === selected ? ' selected' : '';
     html += `<div class="entry-row${sel}" onclick="selectEntry('${e.key.replace(/'/g,"\\'")}')">
       <div class="row-type ${typeClass(e.type)}">${e.type}</div>
@@ -2345,9 +2301,8 @@ function renderVisible() {
         <div class="row-authors">${stripBraces(getAuthors(e))}</div>
         <div class="row-title">${stripBraces(fmt(e,'title')) || '<em style="color:var(--text3)">(no title)</em>'}</div>
         <div class="row-meta">
-          ${e.type === 'archival' && fmt(e,'date_range') ? `<span class="row-year">${fmt(e,'date_range')}</span>` : fmt(e,'year') ? `<span class="row-year">${fmt(e,'year')}</span>` : ''}
+          ${fmt(e,'year') ? `<span class="row-year">${fmt(e,'year')}</span>` : ''}
           ${getVenue(e) ? `<span class="row-venue">${stripBraces(getVenue(e))}</span>` : ''}
-          ${access ? `<span class="row-access ${access}">${access}</span>` : ''}
           ${jel ? `<span class="row-jel">${jel.split(/[;,\s]+/).slice(0,3).join(' ')}</span>` : ''}
         </div>
       </div>
@@ -2390,14 +2345,6 @@ function buildSidebarFilters() {
   const locSelect = document.getElementById('loc-filter');
   locSelect.innerHTML = '<option value="">All LOC classes</option>'
     + [...locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
-
-  // Access filter — show only if archival entries exist
-  const hasArchival = entries.some(e => e.type === 'archival');
-  const accessSection = document.getElementById('access-filter-section');
-  if (accessSection) accessSection.style.display = hasArchival ? '' : 'none';
-  // Preserve selected access value across rebuilds
-  const accessSelect = document.getElementById('access-filter');
-  if (accessSelect) accessSelect.value = filterAccess;
 }
 
 function setTypeFilter(val) {
@@ -2433,7 +2380,7 @@ function showDetail(e) {
   document.getElementById('d-type').className = `detail-type-badge ${typeClass(e.type)}`;
   document.getElementById('d-title').textContent = stripBraces(fmt(e,'title')) || '(no title)';
   document.getElementById('d-authors').textContent = stripBraces(fmt(e,'author') || fmt(e,'editor') || '');
-  document.getElementById('d-year').textContent = (e.type === 'archival' && fmt(e,'date_range')) ? fmt(e,'date_range') : fmt(e,'year') || '';
+  document.getElementById('d-year').textContent = fmt(e,'year') || '';
 
   const fields = document.getElementById('detail-fields');
   const rows = [];
@@ -2494,54 +2441,11 @@ function showDetail(e) {
   // Datasource provenance
   const ds = fmt(e,'datasource');
   if (ds) {
-    const dsLabel = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual','csv-import':'CSV Import','archive-visit':'Archive Visit'}[ds] || ds;
+    const dsLabel = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual','csv-import':'CSV Import','photo-barcode':'Photo (barcode)','photo-vision':'Photo (Vision)'}[ds] || ds;
     rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
       <div class="field-label">Data Source</div>
       <div class="field-value"><span class="datasource-badge ${ds}">${dsLabel}</span></div>
     </div>`);
-  }
-
-  // Archival fields
-  if (e.type === 'archival') {
-    const archFields = [
-      ['Repository',   fmt(e,'repository')],
-      ['Collection',   fmt(e,'collection')],
-      ['Box',          fmt(e,'box')],
-      ['Folder',       fmt(e,'folder')],
-      ['Item',         fmt(e,'item')],
-      ['Call Number',  fmt(e,'call_number')],
-      ['Date Range',   fmt(e,'date_range')],
-      ['Access',       fmt(e,'access')],
-      ['Finding Aid',  fmt(e,'finding_aid_url') ? `<a href="${fmt(e,'finding_aid_url')}" target="_blank" style="color:var(--blue)">${fmt(e,'finding_aid_url').slice(0,50)}…</a>` : ''],
-      ['Visit Date',   fmt(e,'visit_date')],
-      ['Access Note',  fmt(e,'access_note')],
-    ];
-    const hasAny = archFields.some(([,v]) => v);
-    if (hasAny) {
-      rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
-        <div class="field-label" style="color:var(--amber);letter-spacing:.08em;">Archival Location</div>
-        <div class="field-value"></div>
-      </div>`);
-      archFields.forEach(([label, val]) => {
-        if (val) addField(label, val, label === 'Call Number' || label === 'Box' || label === 'Folder' || label === 'Date Range' || label === 'Visit Date' ? 'mono' : '');
-      });
-      // ArchiveGrid and SNAC link-out buttons
-      const agQuery  = encodeURIComponent([fmt(e,'repository'), fmt(e,'collection'), fmt(e,'title')].filter(Boolean).join(' '));
-      const snacQuery = encodeURIComponent(fmt(e,'author') || fmt(e,'repository') || fmt(e,'title') || '');
-      rows.push(`<div class="field-row" style="margin-top:8px;">
-        <div class="field-label">External Archives</div>
-        <div class="field-value" style="display:flex;gap:6px;flex-wrap:wrap;">
-          <a href="https://researchworks.oclc.org/archivegrid/?q=${agQuery}" target="_blank" rel="noopener"
-             style="font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:2px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);text-decoration:none;transition:all .15s;"
-             onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'"
-             onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">ArchiveGrid ↗</a>
-          <a href="https://snaccooperative.org/search?query=${snacQuery}" target="_blank" rel="noopener"
-             style="font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:2px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);text-decoration:none;transition:all .15s;"
-             onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'"
-             onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">SNAC ↗</a>
-        </div>
-      </div>`);
-    }
   }
 
   // Citation key
@@ -2552,7 +2456,6 @@ function showDetail(e) {
 
   fields.innerHTML = rows.join('');
   updateBibtexPane();
-  updateChicagoPane();
 }
 
 // ════════════════════════════════════════════════════
@@ -2600,19 +2503,6 @@ function openEditForm(e, isNewEntry) {
   document.getElementById('f-note').value      = fmt(e,'note');
   setDatasource(fmt(e,'datasource') || 'manual');
 
-  // Archival fields
-  document.getElementById('f-repository').value     = fmt(e,'repository');
-  document.getElementById('f-collection').value     = fmt(e,'collection');
-  document.getElementById('f-box').value            = fmt(e,'box');
-  document.getElementById('f-folder').value         = fmt(e,'folder');
-  document.getElementById('f-item').value           = fmt(e,'item');
-  document.getElementById('f-call-number').value    = fmt(e,'call_number');
-  document.getElementById('f-date-range').value     = fmt(e,'date_range');
-  document.getElementById('f-access').value         = fmt(e,'access') || '';
-  document.getElementById('f-finding-aid-url').value= fmt(e,'finding_aid_url');
-  document.getElementById('f-visit-date').value     = fmt(e,'visit_date');
-  document.getElementById('f-access-note').value    = fmt(e,'access_note');
-
   const lcc = document.getElementById('f-lcc');
   lcc.value = fmt(e,'lcc') || '';
 
@@ -2627,13 +2517,10 @@ function openEditForm(e, isNewEntry) {
   document.getElementById('loc-suggest-status').textContent = '';
 
   // Reset fetch panels back to DOI tab
-  // Also close the raw BibTeX pane and Chicago pane while editing
+  // Also close the raw BibTeX pane while editing
   bibtexPaneOpen = false;
   document.getElementById('bibtex-raw').classList.remove('open');
   document.getElementById('bibtex-toggle-arrow').classList.remove('open');
-  chicagoPaneOpen = false;
-  document.getElementById('chicago-raw').style.display = 'none';
-  document.getElementById('chicago-toggle-arrow').classList.remove('open');
   switchFetchTab('doi');
   setFetchStatus('doi','');
   setFetchStatus('isbn','');
@@ -2641,10 +2528,6 @@ function openEditForm(e, isNewEntry) {
   document.getElementById('isbn-input').value = '';
   document.getElementById('title-search-input').value = '';
   document.getElementById('author-search-input').value = '';
-  document.getElementById('archive-search-input').value = '';
-  setFetchStatus('archive','');
-  const archRes = document.getElementById('archive-results');
-  if (archRes) { archRes.innerHTML = ''; archRes.style.display = 'none'; }
 
   // Set LOC button state for current entry type
   onTypeChange();
@@ -2700,18 +2583,6 @@ function saveEntry() {
     keywords:  document.getElementById('f-keywords').value.trim(),
     note:      document.getElementById('f-note').value.trim(),
     datasource: document.getElementById('f-datasource').value.trim(),
-    // Archival fields
-    repository:     document.getElementById('f-repository').value.trim(),
-    collection:     document.getElementById('f-collection').value.trim(),
-    box:            document.getElementById('f-box').value.trim(),
-    folder:         document.getElementById('f-folder').value.trim(),
-    item:           document.getElementById('f-item').value.trim(),
-    call_number:    document.getElementById('f-call-number').value.trim(),
-    date_range:     document.getElementById('f-date-range').value.trim(),
-    access:         document.getElementById('f-access').value.trim(),
-    finding_aid_url: document.getElementById('f-finding-aid-url').value.trim(),
-    visit_date:     document.getElementById('f-visit-date').value.trim(),
-    access_note:    document.getElementById('f-access-note').value.trim(),
   };
 
   // Remove empty fields
@@ -2903,11 +2774,587 @@ function initTheme() {
   } catch(e){}
 }
 
+
+
+// ════════════════════════════════════════════════════
+//  PHOTO BATCH IMPORT
+// ════════════════════════════════════════════════════
+
+const pbState = {
+  file: null,
+  books: [],      // [{index, title, author, isbn, include, status, entry}]
+  shelfTag: '',
+  stage: 'upload'
+};
+
+function openPhotoBatch() {
+  pbReset();
+  openModal('photo-batch-modal');
+}
+
+function pbClose() {
+  closeModal('photo-batch-modal');
+}
+
+function pbReset() {
+  pbState.file = null; pbState.books = []; pbState.stage = 'upload';
+  ['pb-stage-upload','pb-stage-review','pb-stage-results'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.style.display = i === 0 ? '' : 'none';
+  });
+  document.getElementById('pb-upload-status').textContent = '';
+  document.getElementById('pb-upload-status').style.color = 'var(--text2)';
+  document.getElementById('pb-action-btn').style.display = 'none';
+  document.getElementById('pb-action-btn').onclick = null;
+  // Remove any extra footer buttons from previous run
+  const footer = document.getElementById('photo-batch-footer');
+  const extraBtns = footer.querySelectorAll('.modal-btn.dl-btn');
+  extraBtns.forEach(b => b.remove());
+  // Reset file input
+  const fi = document.getElementById('pb-file-input');
+  if (fi) fi.value = '';
+}
+
+async function pbHandleUpload(event) {
+  const file = event.target.files[0];
+  if (file) await pbProcessImage(file);
+}
+
+async function pbHandleDrop(event) {
+  event.preventDefault();
+  document.getElementById('pb-upload-zone').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) await pbProcessImage(file);
+}
+
+async function pbProcessImage(file) {
+  pbState.file = file;
+  const statusEl = document.getElementById('pb-upload-status');
+  statusEl.style.color = 'var(--text3)';
+  statusEl.textContent = 'Waiting for API key…';
+
+  requireApiKey(async () => {
+    statusEl.textContent = 'Analysing photo with Claude Vision — this may take a few seconds…';
+    try {
+      const raw = await callVisionAPI(file, PHOTO_PROMPT_MULTI);
+      const cleaned = raw.replace(/```json|```/g, '').trim();
+      let books;
+      try {
+        books = JSON.parse(cleaned);
+      } catch {
+        // Vision returned something other than JSON — show error
+        statusEl.textContent = 'Could not parse Vision response. Try a clearer photo.';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      if (!Array.isArray(books) || books.length === 0) {
+        statusEl.textContent = 'No books detected in photo. Try a clearer image with spines facing the camera.';
+        statusEl.style.color = 'var(--amber)';
+        return;
+      }
+      pbState.books = books.map(b => ({
+        ...b,
+        title:   (b.title  || '').trim(),
+        author:  (b.author || '').trim(),
+        isbn:    b.isbn && b.isbn !== 'null' ? b.isbn.replace(/\D/g,'') : '',
+        include: true,
+        status:  'pending',
+        entry:   null
+      }));
+      pbShowReview();
+    } catch(err) {
+      statusEl.textContent = `Vision error: ${err.message}`;
+      statusEl.style.color = 'var(--red)';
+    }
+  });
+}
+
+function pbShowReview() {
+  pbState.stage = 'review';
+  document.getElementById('pb-stage-upload').style.display = 'none';
+  const reviewEl = document.getElementById('pb-stage-review');
+  reviewEl.style.display = 'flex';
+
+  // Thumbnail
+  document.getElementById('pb-thumb').src = URL.createObjectURL(pbState.file);
+
+  // Build review table
+  const tbody = document.getElementById('pb-review-tbody');
+  tbody.innerHTML = '';
+  pbState.books.forEach((b, i) => {
+    const uncertain = b.title.endsWith('?');
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border)';
+    if (uncertain) tr.style.background = 'color-mix(in srgb, var(--amber-dim) 30%, transparent)';
+    tr.innerHTML = `
+      <td style="padding:4px 8px;text-align:center;">
+        <input type="checkbox" ${b.include ? 'checked' : ''} onchange="pbToggleBook(${i}, this.checked)">
+      </td>
+      <td style="padding:4px 8px;color:var(--text3);font-variant-numeric:tabular-nums;">${b.index}</td>
+      <td style="padding:4px 6px;">
+        <input class="form-input" value="${escHtml(b.title)}"
+               oninput="pbState.books[${i}].title=this.value;pbUpdateCount()"
+               style="font-size:12px;padding:3px 6px;width:100%;${uncertain ? 'border-color:var(--amber);' : ''}">
+      </td>
+      <td class="pb-col-author" style="padding:4px 6px;">
+        <input class="form-input" value="${escHtml(b.author)}"
+               oninput="pbState.books[${i}].author=this.value"
+               style="font-size:12px;padding:3px 6px;width:100%;">
+      </td>
+      <td class="pb-col-isbn" style="padding:4px 6px;">
+        <input class="form-input mono" value="${escHtml(b.isbn)}"
+               oninput="pbState.books[${i}].isbn=this.value.replace(/\\D/g,'')"
+               style="font-size:11px;padding:3px 6px;width:100%;" placeholder="—">
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const n = pbState.books.filter(b => b.include).length;
+  const actionBtn = document.getElementById('pb-action-btn');
+  actionBtn.style.display = '';
+  actionBtn.textContent = `Look up ${n} book${n !== 1 ? 's' : ''}`;
+  actionBtn.onclick = pbRunLookups;
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function pbToggleBook(i, checked) {
+  pbState.books[i].include = checked;
+  pbUpdateCount();
+}
+
+function pbUpdateCount() {
+  const n = pbState.books.filter(b => b.include).length;
+  const btn = document.getElementById('pb-action-btn');
+  if (btn) btn.textContent = `Look up ${n} book${n !== 1 ? 's' : ''}`;
+}
+
+async function pbRunLookups() {
+  pbState.shelfTag = document.getElementById('pb-shelf-tag').value.trim();
+  pbState.stage = 'results';
+  document.getElementById('pb-stage-review').style.display = 'none';
+  const resultsEl = document.getElementById('pb-stage-results');
+  resultsEl.style.display = 'flex';
+
+  const actionBtn = document.getElementById('pb-action-btn');
+  actionBtn.style.display = 'none';
+
+  const queue = pbState.books.filter(b => b.include);
+  const resultsList = document.getElementById('pb-results-list');
+  resultsList.innerHTML = '';
+  const progressLabel = document.getElementById('pb-progress-label');
+
+  for (let i = 0; i < queue.length; i++) {
+    const b = queue[i];
+    progressLabel.textContent = `[${i+1}/${queue.length}] Looking up "${b.title.replace(/\?$/, '')}"…`;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:4px;font-size:12px;';
+    row.innerHTML = `<span style="color:var(--text3);min-width:22px;font-variant-numeric:tabular-nums;">${b.index}.</span>
+                     <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(b.title)}">${escHtml(b.title.replace(/\?$/,''))}</span>
+                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ looking up…</span>`;
+    resultsList.appendChild(row);
+    resultsList.scrollTop = resultsList.scrollHeight;
+
+    try {
+      let entry = null;
+      if (b.isbn && /\d{9,13}/.test(b.isbn)) {
+        entry = await pbFetchByIsbn(b.isbn);
+      }
+      if (!entry && b.title) {
+        entry = await pbFetchByTitle(b.title.replace(/\?$/,''), b.author);
+      }
+
+      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
+      if (entry) {
+        if (pbState.shelfTag) entry.shelf = pbState.shelfTag;
+        b.entry  = entry;
+        b.status = 'ok';
+        statusCell.textContent = '✓ ' + (entry.key || '');
+        statusCell.style.color = 'var(--green)';
+      } else {
+        b.status = 'notfound';
+        statusCell.textContent = '⚠ not found';
+        statusCell.style.color = 'var(--amber)';
+      }
+    } catch(err) {
+      b.status = 'error';
+      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
+      if (statusCell) { statusCell.textContent = '✗ error'; statusCell.style.color = 'var(--red)'; }
+    }
+  }
+
+  // Summary
+  const ok   = queue.filter(b => b.status === 'ok');
+  const fail = queue.filter(b => b.status !== 'ok');
+  progressLabel.innerHTML = `Done · <span style="color:var(--green);">${ok.length} entr${ok.length!==1?'ies':'y'} ready</span>` +
+    (fail.length ? ` · <span style="color:var(--amber);">${fail.length} unresolved</span>` : '');
+
+  // Footer buttons
+  const footer = document.getElementById('photo-batch-footer');
+  if (ok.length > 0) {
+    // Download .bib
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'modal-btn secondary dl-btn';
+    dlBtn.textContent = 'Download .bib';
+    dlBtn.onclick = () => pbDownloadBib(ok.map(b => b.entry));
+    footer.insertBefore(dlBtn, document.getElementById('pb-action-btn'));
+
+    // Add to Library
+    actionBtn.style.display = '';
+    actionBtn.textContent = `Add ${ok.length} entr${ok.length!==1?'ies':'y'} to Library`;
+    actionBtn.onclick = () => pbAddToLibrary(ok.map(b => b.entry));
+  }
+
+  // Residuals download
+  if (fail.length > 0) {
+    const residBtn = document.createElement('button');
+    residBtn.className = 'modal-btn secondary dl-btn';
+    residBtn.textContent = 'Download unresolved';
+    residBtn.onclick = () => pbDownloadResiduals(fail);
+    footer.insertBefore(residBtn, document.getElementById('pb-action-btn'));
+  }
+}
+
+// ── Batch Lookup Helpers ─────────────────────────────────────────────────
+
+async function pbFetchByIsbn(isbn) {
+  // Open Library first
+  try {
+    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const d = await r.json();
+    const key = `ISBN:${isbn}`;
+    if (d[key]) return pbParseOLData(d[key], isbn, 'photo-barcode');
+  } catch {}
+  // Google Books fallback
+  try {
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const d = await r.json();
+    if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, isbn, 'photo-barcode');
+  } catch {}
+  return null;
+}
+
+async function pbFetchByTitle(title, author) {
+  const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
+  // Open Library title+author search
+  try {
+    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1`);
+    const d = await r.json();
+    if (d.docs?.length) return pbParseOLSearch(d.docs[0], 'photo-vision');
+  } catch {}
+  // Google Books title search
+  try {
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const d = await r.json();
+    if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, null, 'photo-vision');
+  } catch {}
+  return null;
+}
+
+// ── Entry Parsers ─────────────────────────────────────────────────────────
+
+function pbBuildKey(entry) {
+  const auth = (entry.author || '').split(',')[0].toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+  const yr   = entry.year || '0000';
+  const kw   = (entry.keywords || entry.title || '').toLowerCase()
+    .split(/[\s,;:]+/).filter(w => w.length > 3 && !/^(the|and|for|with|from|that|this|into|about|over)$/.test(w))[0] || 'misc';
+  return `${auth}:${yr}:${kw.substring(0,12)}`;
+}
+
+function pbParseOLData(doc, isbn, src) {
+  const authors = (doc.authors || []).map(a => a.name || '').join(' and ');
+  const pub = doc.publishers?.[0]?.name || '';
+  const year = (doc.publish_date || '').match(/\d{4}/)?.[0] || '';
+  const entry = {
+    type: 'book', author: authors, title: doc.title || '',
+    publisher: pub, year, address: doc.publish_places?.[0]?.name || '',
+    pages: String(doc.number_of_pages || ''),
+    isbn: isbn || doc.identifiers?.isbn_13?.[0] || doc.identifiers?.isbn_10?.[0] || '',
+    keywords: (doc.subjects || []).slice(0,5).map(s => s.name || s).join(', '),
+    datasource: src, shelf: '', note: '', jel: '', loc: '', doi: '', url: doc.url || ''
+  };
+  entry.key = pbBuildKey(entry);
+  return entry;
+}
+
+function pbParseGBData(vi, isbn, src) {
+  const authors = (vi.authors || []).join(' and ');
+  const year = (vi.publishedDate || '').match(/\d{4}/)?.[0] || '';
+  const entry = {
+    type: 'book', author: authors, title: vi.title || '',
+    publisher: vi.publisher || '', year, address: '',
+    pages: String(vi.pageCount || ''),
+    isbn: isbn || vi.industryIdentifiers?.find(x => x.type === 'ISBN_13')?.identifier || '',
+    keywords: (vi.categories || []).join(', '),
+    abstract: vi.description ? vi.description.substring(0, 300) : '',
+    datasource: src, shelf: '', note: '', jel: '', loc: '', doi: '', url: ''
+  };
+  entry.key = pbBuildKey(entry);
+  return entry;
+}
+
+function pbParseOLSearch(doc, src) {
+  const authors = (doc.author_name || []).join(' and ');
+  const year = String(doc.first_publish_year || '');
+  const isbn = (doc.isbn || [])[0] || '';
+  const entry = {
+    type: 'book', author: authors, title: doc.title || '',
+    publisher: (doc.publisher || [])[0] || '',
+    year, address: (doc.publish_place || [])[0] || '',
+    pages: String(doc.number_of_pages_median || ''),
+    isbn,
+    keywords: (doc.subject || []).slice(0,5).join(', '),
+    datasource: src, shelf: '', note: '', jel: '', loc: '', doi: '', url: ''
+  };
+  entry.key = pbBuildKey(entry);
+  return entry;
+}
+
+// ── Output Helpers ─────────────────────────────────────────────────────────
+
+function pbAddToLibrary(entries) {
+  if (!window.entries) window.entries = [];
+  entries.forEach(e => window.entries.push(e));
+  if (typeof refreshEntryList === 'function') refreshEntryList();
+  if (typeof renderVirtualList === 'function') renderVirtualList();
+  closeModal('photo-batch-modal');
+  if (typeof showToast === 'function') {
+    showToast(`${entries.length} entr${entries.length!==1?'ies':'y'} added to library`);
+  }
+  // Enable export button
+  const expBtn = document.getElementById('btn-export');
+  if (expBtn) expBtn.disabled = false;
+}
+
+function pbDownloadBib(entries) {
+  const bib = entries.map(e => entryToBibTeX(e)).join('\n\n');
+  const blob = new Blob([bib], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'photo-import.bib';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function pbDownloadResiduals(failedBooks) {
+  const lines = failedBooks.map(b =>
+    `MEDIUM | (unresolved) | Title: "${b.title.replace(/\?$/,'')}"${b.author ? ' | Author: ' + b.author : ''} | Photo batch: no API match`
+  );
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'photo-batch-residuals.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+// ════════════════════════════════════════════════════
+//  PHOTO IMPORT — UTILITIES & CONSTANTS
+// ════════════════════════════════════════════════════
+
+const PHOTO_PROMPT_SINGLE = `Look at this book cover or spine photo.
+1. Is there a visible ISBN barcode? If yes, read the digits carefully and return ONLY: ISBN: <digits>
+2. If no barcode is visible, extract the title and primary author from the cover/spine text.
+   Return ONLY valid JSON: {"title": "...", "author": "..."}
+Return nothing else.`;
+
+const PHOTO_PROMPT_MULTI = `This is a photo of book spines on a shelf or in a stack.
+List every distinct book you can see, left to right (shelf) or front to back (stack).
+For each book extract: title, author (if visible on spine), and ISBN (if visible).
+Return ONLY valid JSON array:
+[{"index":1,"title":"...","author":"...","isbn":"...or null"},...]
+If title text is unclear, include your best reading with a "?" suffix.
+Return nothing else — no preamble, no markdown fences.`;
+
+async function extractBarcodeFromImage(file) {
+  // Returns ISBN string (digits only) or null. Uses ZXing client-side — no API key required.
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = async () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const reader = new ZXingBrowser.BrowserMultiFormatReader();
+        const result = await reader.decodeFromCanvas(canvas);
+        const raw = result.getText().replace(/\D/g,'');
+        // Accept ISBN-13 (978/979 prefix) or ISBN-10 (10 digits)
+        if (/^97[89]\d{10}$/.test(raw) || /^\d{10}$/.test(raw)) {
+          resolve(raw);
+        } else {
+          resolve(null);
+        }
+      } catch {
+        resolve(null);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+async function callVisionAPI(imageFile, prompt) {
+  const key = getApiKey();
+  if (!key) throw new Error('No API key set');
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(imageFile);
+  });
+  const mediaType = imageFile.type || 'image/jpeg';
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 }},
+        { type: 'text', text: prompt }
+      ]}]
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API error ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content.map(b => b.text || '').join('');
+}
+
+function getApiKey() {
+  return sessionStorage.getItem('bf-anthropic-key') || null;
+}
+
+function requireApiKey(callback) {
+  if (getApiKey()) { callback(); return; }
+  window._pendingApiKeyCallback = callback;
+  openModal('apikey-modal');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apikey-input').value.trim();
+  const statusEl = document.getElementById('apikey-status');
+  if (!key.startsWith('sk-ant-')) {
+    statusEl.textContent = 'Key should start with sk-ant-';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  sessionStorage.setItem('bf-anthropic-key', key);
+  statusEl.textContent = 'Saved for this session.';
+  statusEl.style.color = 'var(--green)';
+  setTimeout(() => {
+    closeModal('apikey-modal');
+    if (window._pendingApiKeyCallback) {
+      window._pendingApiKeyCallback();
+      window._pendingApiKeyCallback = null;
+    }
+  }, 600);
+}
+
+
+// ── Photo Import: Single Book ─────────────────────────────────────────────
+async function handleSinglePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (file) await processSinglePhoto(file);
+}
+
+async function photoDropSingle(event) {
+  event.preventDefault();
+  document.getElementById('photo-upload-zone').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) await processSinglePhoto(file);
+}
+
+function photoDragOver(event) {
+  event.preventDefault();
+  document.getElementById('photo-upload-zone').classList.add('drag-over');
+}
+
+async function processSinglePhoto(file) {
+  const statusEl    = document.getElementById('photo-status');
+  const previewRow  = document.getElementById('photo-preview-row');
+  const thumb       = document.getElementById('photo-thumb');
+  const resultText  = document.getElementById('photo-result-text');
+
+  // Show thumbnail immediately
+  thumb.src = URL.createObjectURL(file);
+  previewRow.style.display = 'flex';
+  statusEl.style.color = 'var(--text3)';
+  statusEl.textContent = 'Scanning for barcode…';
+
+  const isbn = await extractBarcodeFromImage(file);
+
+  if (isbn) {
+    statusEl.textContent = `Barcode detected: ${isbn} — fetching metadata…`;
+    resultText.textContent = `ISBN: ${isbn} (from barcode)`;
+    // Populate ISBN field and fire existing lookup
+    document.getElementById('isbn-input').value = isbn;
+    switchFetchTab('isbn');
+    await isbnLookup();
+    statusEl.textContent = 'Done — review fields below.';
+    statusEl.style.color = 'var(--green)';
+  } else {
+    // No barcode — try Vision API for cover/spine text
+    statusEl.textContent = 'No barcode found — using Vision to read cover text…';
+    try {
+      requireApiKey(async () => {
+        const raw = await callVisionAPI(file, PHOTO_PROMPT_SINGLE);
+        // Try ISBN result first
+        const isbnMatch = raw.match(/ISBN[:\s]+([\d\-X]{9,17})/i);
+        if (isbnMatch) {
+          const extractedIsbn = isbnMatch[1].replace(/[\-\s]/g,'');
+          resultText.textContent = `ISBN from Vision: ${extractedIsbn}`;
+          document.getElementById('isbn-input').value = extractedIsbn;
+          switchFetchTab('isbn');
+          await isbnLookup();
+          statusEl.textContent = 'Done — review fields below.';
+          statusEl.style.color = 'var(--green)';
+        } else {
+          // JSON title/author result
+          try {
+            const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+            if (parsed.title) {
+              document.getElementById('title-search-input').value = parsed.title;
+              if (parsed.author) document.getElementById('author-search-input').value = parsed.author;
+              resultText.textContent = `Title: "${parsed.title}"${parsed.author ? ' · Author: ' + parsed.author : ''}`;
+              switchFetchTab('title');
+              statusEl.textContent = 'Cover text read — click Open Library or Google Books to fetch.';
+              statusEl.style.color = 'var(--amber)';
+            }
+          } catch {
+            resultText.textContent = raw.substring(0, 120);
+            statusEl.textContent = 'Could not parse Vision response. Try Title Search tab manually.';
+            statusEl.style.color = 'var(--amber)';
+          }
+        }
+      });
+    } catch(err) {
+      statusEl.textContent = `Vision error: ${err.message}`;
+      statusEl.style.color = 'var(--red)';
+      switchFetchTab('title');
+    }
+  }
+}
+
 // ════════════════════════════════════════════════════
 //  FETCH METADATA — SHARED UTILITIES
 // ════════════════════════════════════════════════════
 function switchFetchTab(tab) {
-  ['doi','isbn','title','archive'].forEach(t => {
+  ['doi','isbn','title','photo'].forEach(t => {
     document.getElementById('ftab-'+t).classList.toggle('active', t===tab);
     document.getElementById('fpanel-'+t).classList.toggle('active', t===tab);
   });
@@ -2952,7 +3399,7 @@ function setDatasource(ds) {
   const row   = document.getElementById('datasource-row');
   const badge = document.getElementById('datasource-badge-display');
   if (!ds || ds === 'manual') { row.style.display = 'none'; return; }
-  const labels = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import','archive-visit':'Archive Visit'};
+  const labels = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books'};
   badge.innerHTML = `<span class="datasource-badge ${ds}">${labels[ds]||ds}</span>`;
   row.style.display = 'flex';
 }
@@ -3231,321 +3678,6 @@ function openWorldCat() {
   }
   window.open(url, '_blank', 'noopener');
   toast('WorldCat search opened in new tab.','info');
-}
-
-function openArchiveGrid() {
-  const repo       = document.getElementById('f-repository')?.value || '';
-  const collection = document.getElementById('f-collection')?.value || '';
-  const title      = document.getElementById('f-title')?.value || (selected && fmt(entries.find(x=>x.key===selected),'title')) || '';
-  const q = encodeURIComponent([repo, collection, title].filter(Boolean).join(' '));
-  window.open(`https://researchworks.oclc.org/archivegrid/?q=${q}`, '_blank', 'noopener');
-  toast('ArchiveGrid search opened in new tab.', 'info');
-}
-
-function openSNAC() {
-  const author = document.getElementById('f-author')?.value || (selected && fmt(entries.find(x=>x.key===selected),'author')) || '';
-  const repo   = document.getElementById('f-repository')?.value || '';
-  const q = encodeURIComponent(author || repo || '');
-  window.open(`https://snaccooperative.org/search?query=${q}`, '_blank', 'noopener');
-  toast('SNAC search opened in new tab.', 'info');
-}
-
-// ════════════════════════════════════════════════════
-//  ARCHIVAL SEARCH — Internet Archive API
-// ════════════════════════════════════════════════════
-async function archiveOrgSearch() {
-  const q = document.getElementById('archive-search-input').value.trim();
-  if (!q) return;
-  const btn = document.getElementById('archive-ia-btn');
-  const resultsEl = document.getElementById('archive-results');
-  btn.textContent = 'Searching…'; btn.disabled = true;
-  setFetchStatus('archive', '');
-  resultsEl.innerHTML = '';
-  resultsEl.style.display = 'none';
-
-  try {
-    const params = new URLSearchParams({
-      q,
-      'fl[]': 'identifier,title,creator,date,description,subject,mediatype,publisher',
-      rows: 8, output: 'json', 'sort[]': 'downloads desc'
-    });
-    const res = await fetch(`https://archive.org/advancedsearch.php?${params}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    const docs = data?.response?.docs || [];
-
-    btn.textContent = 'Internet Archive ↗'; btn.disabled = false;
-
-    if (!docs.length) {
-      setFetchStatus('archive', 'No results found.', 'err');
-      return;
-    }
-
-    setFetchStatus('archive', `${docs.length} result${docs.length>1?'s':''} — click to apply fields`);
-    resultsEl.style.display = 'flex';
-    resultsEl.style.flexDirection = 'flex-column'; // fix display:none/flex conflict
-    resultsEl.style.display = 'block';
-
-    resultsEl.innerHTML = docs.map((doc, i) => {
-      const title   = (Array.isArray(doc.title)   ? doc.title[0]   : doc.title)   || '(no title)';
-      const creator = (Array.isArray(doc.creator) ? doc.creator[0] : doc.creator) || '';
-      const date    = doc.date ? doc.date.slice(0,4) : '';
-      const subject = Array.isArray(doc.subject) ? doc.subject.slice(0,3).join('; ') : (doc.subject || '');
-      const id      = doc.identifier || '';
-      const url     = id ? `https://archive.org/details/${id}` : '';
-      const mediatype = doc.mediatype || '';
-      return `<div class="archive-result-card" onclick="applyArchiveResult(${i})" data-idx="${i}">
-        <div class="archive-result-title">${escHtml(title)}</div>
-        <div class="archive-result-meta">${[creator, date, mediatype].filter(Boolean).join(' · ')}</div>
-        ${subject ? `<div class="archive-result-meta" style="color:var(--text3);font-size:10px;">${escHtml(subject.slice(0,80))}</div>` : ''}
-        <div class="archive-result-apply">↳ Click to apply fields · <a href="${url}" target="_blank" rel="noopener" style="color:#a07adc" onclick="event.stopPropagation()">View on IA ↗</a></div>
-      </div>`;
-    }).join('');
-
-    // Store results for applyArchiveResult
-    window._archiveResults = docs;
-
-  } catch(err) {
-    btn.textContent = 'Internet Archive ↗'; btn.disabled = false;
-    setFetchStatus('archive', 'Error: ' + err.message, 'err');
-  }
-}
-
-function applyArchiveResult(idx) {
-  const docs = window._archiveResults;
-  if (!docs || !docs[idx]) return;
-  const doc = docs[idx];
-
-  const title   = (Array.isArray(doc.title)   ? doc.title[0]   : doc.title)   || '';
-  const creator = (Array.isArray(doc.creator) ? doc.creator[0] : doc.creator) || '';
-  const date    = doc.date ? doc.date.slice(0,4) : '';
-  const id      = doc.identifier || '';
-  const url     = id ? `https://archive.org/details/${id}` : '';
-  const publisher = (Array.isArray(doc.publisher) ? doc.publisher[0] : doc.publisher) || '';
-  const subject   = Array.isArray(doc.subject) ? doc.subject.join('; ') : (doc.subject || '');
-
-  if (title)    { const f = document.getElementById('f-title');     if(f) f.value = title; }
-  if (creator)  { const f = document.getElementById('f-author');    if(f && !f.value) f.value = creator; }
-  if (date)     { const f = document.getElementById('f-year');      if(f && !f.value) f.value = date; }
-  if (url)      { const f = document.getElementById('f-url');       if(f) f.value = url; }
-  if (publisher){ const f = document.getElementById('f-publisher'); if(f && !f.value) f.value = publisher; }
-  if (subject)  { const f = document.getElementById('f-keywords');  if(f && !f.value) f.value = subject.slice(0,200); }
-
-  // If archival type, populate collection from identifier and mark datasource
-  const typeEl = document.getElementById('f-type');
-  if (typeEl?.value === 'archival') {
-    const collEl = document.getElementById('f-collection');
-    if (collEl && !collEl.value && id) collEl.value = id;
-    const urlEl = document.getElementById('f-finding-aid-url');
-    if (urlEl && !urlEl.value && url) urlEl.value = url;
-    setDatasource('archive-visit');
-  }
-
-  toast('Fields applied from Internet Archive.', 'success');
-  setFetchStatus('archive', '✓ Applied — review and save.', 'ok');
-}
-
-function openDPLA() {
-  const q = encodeURIComponent(
-    document.getElementById('archive-search-input')?.value ||
-    document.getElementById('f-title')?.value || ''
-  );
-  window.open(`https://dp.la/search?q=${q}`, '_blank', 'noopener');
-  toast('DPLA search opened in new tab.', 'info');
-}
-
-function openEuropeana() {
-  const q = encodeURIComponent(
-    document.getElementById('archive-search-input')?.value ||
-    document.getElementById('f-title')?.value || ''
-  );
-  window.open(`https://www.europeana.eu/en/search?query=${q}`, '_blank', 'noopener');
-  toast('Europeana search opened in new tab.', 'info');
-}
-
-// ════════════════════════════════════════════════════
-//  CHICAGO NOTES-BIBLIOGRAPHY CITATION FORMATTER
-// ════════════════════════════════════════════════════
-
-function formatAuthorsChicago(authorStr, editorStr, invertFirst) {
-  // invertFirst=true → "Last, First and First Last" (bibliography style)
-  const src = authorStr || editorStr;
-  if (!src) return '';
-  const isEditor = !authorStr && editorStr;
-  const parts = src.split(/\s+and\s+/i).map(p => p.trim()).filter(Boolean);
-
-  const formatted = parts.map((p, i) => {
-    const [last, ...rest] = p.split(',').map(s => s.trim());
-    const first = rest.join(' ');
-    if (invertFirst && i === 0) return first ? `${last}, ${first}` : last;
-    return first ? `${first} ${last}` : last;
-  });
-
-  let result;
-  if (formatted.length === 1) result = formatted[0];
-  else if (formatted.length === 2) result = formatted.join(' and ');
-  else result = formatted.slice(0,-1).join(', ') + ', and ' + formatted[formatted.length-1];
-
-  return isEditor ? result + (parts.length > 1 ? ', eds.' : ', ed.') : result;
-}
-
-function italicise(s) { return s ? `<em>${s}</em>` : ''; }
-
-function formatChicagoNB(e) {
-  // Returns plain-text Chicago NB bibliography entry (footnote style)
-  const t    = e.type;
-  const f    = (field) => stripBraces(fmt(e, field));
-  const auth = formatAuthorsChicago(f('author'), f('editor'), true);
-  const title = f('title');
-  const year  = f('year');
-  const pub   = f('publisher');
-  const addr  = f('address');
-  const doi   = f('doi');
-  const url   = f('url') || (doi ? `https://doi.org/${doi}` : '');
-  const pages = f('pages');
-  const vol   = f('volume');
-  const num   = f('number');
-  const ed    = f('edition');
-  const editorStr = f('editor');
-
-  const placeYear = [addr, pub, year].filter(Boolean);
-  const pubInfo   = placeYear.length ? placeYear.join(': ').replace(/^(.*?): (.*?): (.*)$/, '$1: $2, $3') : year;
-
-  // Helper: wrap in quotes
-  const q = s => s ? `"${s}"` : '';
-
-  let citation = '';
-
-  if (t === 'archival') {
-    // Chicago archival: Author/Creator (if any). "Document Description." Date Range [or Year]. Collection, Box X, Folder Y. Repository, Location.
-    const repo       = f('repository');
-    const collection = f('collection');
-    const box        = f('box');
-    const folder     = f('folder');
-    const item       = f('item');
-    const dateRange  = f('date_range') || year;
-    const findingAid = f('finding_aid_url');
-
-    const locationParts = [
-      collection,
-      box   ? `Box ${box}`    : '',
-      folder ? `Folder ${folder}` : '',
-    ].filter(Boolean).join(', ');
-
-    const parts = [
-      auth ? auth + '.' : '',
-      title ? q(title) + '.' : item ? q(item) + '.' : '',
-      dateRange ? dateRange + '.' : '',
-      locationParts ? locationParts + '.' : '',
-      repo ? repo + '.' : '',
-      findingAid ? `Finding aid: ${findingAid}.` : '',
-    ].filter(Boolean);
-
-    citation = parts.join(' ');
-
-  } else if (t === 'article') {
-    const journal = f('journal');
-    const volNum  = [vol && `${vol}`, num && `no. ${num}`].filter(Boolean).join(', ');
-    const pp      = pages ? `: ${pages}` : '';
-    citation = [
-      auth + '.',
-      q(title) + '.',
-      journal ? `*${journal}*` : '',
-      volNum ? volNum : '',
-      year  ? `(${year})${pp}.` : pp ? pp + '.' : '',
-      doi   ? `https://doi.org/${doi}.` : url ? `${url}.` : '',
-    ].filter(Boolean).join(' ');
-
-  } else if (t === 'book' || t === 'inbook') {
-    const edStr = editorStr && !f('author') ? '' : (editorStr ? `. Edited by ${formatAuthorsChicago('', editorStr, false)}` : '');
-    const edNote = ed ? ` ${ed} ed.` : '';
-    citation = [
-      auth + '.',
-      `*${title}*${edStr}${edNote}.`,
-      pubInfo ? pubInfo + '.' : '',
-      doi ? `https://doi.org/${doi}.` : url ? `${url}.` : '',
-    ].filter(Boolean).join(' ');
-
-  } else if (t === 'incollection' || t === 'inproceedings') {
-    const booktitle = f('booktitle');
-    const edBy = editorStr ? `, edited by ${formatAuthorsChicago('', editorStr, false)}` : '';
-    const pp = pages ? `, ${pages}` : '';
-    citation = [
-      auth + '.',
-      q(title) + '.',
-      booktitle ? `In *${booktitle}*${edBy}${pp}.` : '',
-      pubInfo ? pubInfo + '.' : '',
-    ].filter(Boolean).join(' ');
-
-  } else if (t === 'phdthesis') {
-    const school = f('school');
-    citation = [
-      auth + '.',
-      q(title) + '.',
-      `PhD diss., ${[school, year].filter(Boolean).join(', ')}.`,
-    ].filter(Boolean).join(' ');
-
-  } else if (t === 'techreport' || t === 'working') {
-    const institution = f('institution') || pub;
-    const num2 = f('number') ? ` No. ${f('number')}` : '';
-    citation = [
-      auth + '.',
-      q(title) + '.',
-      [institution, year].filter(Boolean).join(', ') + (num2 ? num2 : '') + '.',
-      doi ? `https://doi.org/${doi}.` : url ? `${url}.` : '',
-    ].filter(Boolean).join(' ');
-
-  } else {
-    // Generic fallback
-    citation = [
-      auth ? auth + '.' : '',
-      title ? q(title) + '.' : '',
-      pub ? pub + '.' : '',
-      year ? year + '.' : '',
-      url ? url + '.' : '',
-    ].filter(Boolean).join(' ');
-  }
-
-  return citation;
-}
-
-let chicagoPaneOpen = false;
-
-function toggleChicagoPane() {
-  chicagoPaneOpen = !chicagoPaneOpen;
-  const raw   = document.getElementById('chicago-raw');
-  const arrow = document.getElementById('chicago-toggle-arrow');
-  raw.style.display   = chicagoPaneOpen ? 'block' : 'none';
-  arrow.classList.toggle('open', chicagoPaneOpen);
-  if (chicagoPaneOpen && selected) renderChicagoPane();
-}
-
-function renderChicagoPane() {
-  const e = entries.find(x => x.key === selected);
-  if (!e) return;
-  const citation = formatChicagoNB(e);
-  // Render with italic markup → real <em> tags
-  document.getElementById('chicago-raw-content').innerHTML =
-    citation.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  document.getElementById('chicago-copy-status').textContent = '';
-}
-
-function updateChicagoPane() {
-  if (chicagoPaneOpen) renderChicagoPane();
-}
-
-function copyChicago() {
-  const e = entries.find(x => x.key === selected);
-  if (!e) return;
-  // Plain-text version: strip * markers
-  const plain = formatChicagoNB(e).replace(/\*/g, '');
-  navigator.clipboard.writeText(plain).then(() => {
-    document.getElementById('chicago-copy-status').textContent = '✓ Copied';
-    setTimeout(() => {
-      const el = document.getElementById('chicago-copy-status');
-      if (el) el.textContent = '';
-    }, 2000);
-  });
 }
 
 // ════════════════════════════════════════════════════
@@ -3869,7 +4001,7 @@ function openStatsModal() {
   const dsSorted = Object.entries(dsCounts).sort((a,b)=>b[1]-a[1]);
 
   // Year histogram — group into ~20 buckets
-  const years = entries.map(e => getSortYear(e)).filter(y => y > 1400 && y <= 2030);
+  const years = entries.map(e => parseInt(fmt(e,'year'))).filter(y => y > 1400 && y <= 2030);
   let yearHtml = '';
   if (years.length) {
     const minY = Math.min(...years);
@@ -4418,22 +4550,6 @@ function onTypeChange() {
   } else {
     statusEl.textContent = '';
   }
-
-  // Show/hide archival-specific fields section
-  const archivalSection = document.getElementById('archival-section');
-  if (archivalSection) {
-    archivalSection.style.display = entryType === 'archival' ? '' : 'none';
-  }
-
-  // When type is archival, auto-set datasource to archive-visit if not already set
-  if (entryType === 'archival') {
-    const dsInput = document.getElementById('f-datasource');
-    if (dsInput && (!dsInput.value || dsInput.value === 'manual')) {
-      setDatasource('archive-visit');
-    }
-    // Switch fetch tab to Archival Search
-    switchFetchTab('archive');
-  }
 }
 
 // ════════════════════════════════════════════════════
@@ -4553,7 +4669,7 @@ function init() {
     }
   });
 
-  console.log('BibForge v1.2 — Keyboard shortcuts:\n  Ctrl/Cmd+D  Quick add via DOI\n  Ctrl/Cmd+F  Focus search\n  Ctrl/Cmd+S  Save to file (or save entry while editing)\n  Ctrl/Cmd+H  Find & Replace\n  ↑↓          Navigate entries\n  Escape      Cancel / close\n\n  Toolbar: Save · Duplicate · Stats · Insights · Find & Replace · Shortcuts\n  Import: .bib file or .csv (with column mapping dialog)\n\n  Archival (v1.1–1.2):\n    @archival type: repository/collection/box/folder/call_number/date_range/\n                    access/finding_aid_url/visit_date/access_note\n    Fetch tab: Internet Archive search with field apply; DPLA + Europeana link-outs\n    ArchiveGrid + SNAC link-outs (edit form + detail view)\n    Archive Access sidebar filter (auto-appears with archival entries)\n    Chicago NB citation pane (detail view, copy-to-clipboard)\n    Date-range-aware year filtering and sorting\n\n  Auto-load path: ' + (BIBFORGE_CONFIG.autoLoad || 'disabled — set BIBFORGE_CONFIG.autoLoad to enable'));
+  console.log('BibForge v1.3 — Keyboard shortcuts:\n  Ctrl/Cmd+D  Quick add via DOI\n  Ctrl/Cmd+F  Focus search\n  Ctrl/Cmd+S  Save to file (or save entry while editing)\n  Ctrl/Cmd+H  Find & Replace\n  ↑↓          Navigate entries\n  Escape      Cancel / close\n\n  Toolbar: Save · Duplicate · Stats · Insights · Find & Replace · Shortcuts\n  Import: .bib file or .csv (with column mapping dialog)\n\n  Auto-load path: ' + (BIBFORGE_CONFIG.autoLoad || 'disabled — set BIBFORGE_CONFIG.autoLoad to enable'));
 
 // ════════════════════════════════════════════════════
 //  CSV IMPORT — PARSE + COLUMN MAPPING
@@ -4762,9 +4878,9 @@ function renderInsightsOverview() {
   const withLoc  = entries.filter(e => fmt(e,'lcc')).length;
   const withDoi  = entries.filter(e => fmt(e,'doi')).length;
   const withAbst = entries.filter(e => fmt(e,'abstract')).length;
-  const recent   = entries.filter(e => { const y=getSortYear(e); return y>=(currentYear-5); }).length;
+  const recent   = entries.filter(e => { const y=parseInt(fmt(e,'year')); return y>=(currentYear-5); }).length;
 
-  const years = entries.map(e=>getSortYear(e)).filter(y=>y>1000&&y<=currentYear);
+  const years = entries.map(e=>parseInt(fmt(e,'year'))).filter(y=>y>1000&&y<=currentYear);
   const medianAge = years.length ? (() => {
     const sorted = years.map(y=>currentYear-y).sort((a,b)=>a-b);
     return sorted[Math.floor(sorted.length/2)];
@@ -4789,7 +4905,7 @@ function renderInsightsOverview() {
     <div class="ins-section-title">Datasource Breakdown</div>
     ${Object.entries(sources).sort((a,b)=>b[1]-a[1]).map(([ds,c])=>
       `<div class="ins-bar-row">
-        <div class="ins-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import','archive-visit':'Archive Visit',manual:'Manual'}[ds]||ds}</div>
+        <div class="ins-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import',manual:'Manual'}[ds]||ds}</div>
         <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(c/total*100)}%"></div></div>
         <div class="ins-bar-count">${c.toLocaleString()}</div>
       </div>`).join('')}
@@ -4799,7 +4915,7 @@ function renderInsightsOverview() {
 // ── CITATION AGE ──
 function renderInsightsAge() {
   const currentYear = new Date().getFullYear();
-  const years = entries.map(e=>getSortYear(e)).filter(y=>y>1000&&y<=currentYear+1);
+  const years = entries.map(e=>parseInt(fmt(e,'year'))).filter(y=>y>1000&&y<=currentYear+1);
   if (!years.length) { document.getElementById('insights-panel-age').innerHTML='<p style="color:var(--text3)">No year data.</p>'; return; }
 
   const ages = years.map(y=>currentYear-y);
@@ -4943,13 +5059,10 @@ function renderInsightsJel() {
 
 // ── METADATA QUALITY ──
 function renderInsightsQuality() {
-  const QUALITY_FIELDS_DEFAULT  = ['title','author','year','journal','doi','abstract','keywords','publisher'];
-  const QUALITY_FIELDS_ARCHIVAL = ['title','repository','collection','date_range','access','visit_date','call_number','access_note'];
-
+  const QUALITY_FIELDS = ['title','author','year','journal','doi','abstract','keywords','publisher'];
   const scores = entries.map(e => {
-    const fields = e.type === 'archival' ? QUALITY_FIELDS_ARCHIVAL : QUALITY_FIELDS_DEFAULT;
-    const filled = fields.filter(f=>fmt(e,f)).length;
-    return Math.round(filled/fields.length*100);
+    const filled = QUALITY_FIELDS.filter(f=>fmt(e,f)).length;
+    return Math.round(filled/QUALITY_FIELDS.length*100);
   });
   const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
   const excellent = scores.filter(s=>s>=87).length;
@@ -4957,16 +5070,11 @@ function renderInsightsQuality() {
   const partial   = scores.filter(s=>s>=37&&s<62).length;
   const sparse    = scores.filter(s=>s<37).length;
 
-  // Per-field fill rate (standard fields only, archival entries excluded from denominator)
-  const nonArchival = entries.filter(e => e.type !== 'archival');
-  const fieldFill = QUALITY_FIELDS_DEFAULT.map(f => ({
-    field: f,
-    count: nonArchival.filter(e=>fmt(e,f)).length,
-    pct: nonArchival.length ? Math.round(nonArchival.filter(e=>fmt(e,f)).length/nonArchival.length*100) : 0
+  // Per-field fill rate
+  const fieldFill = QUALITY_FIELDS.map(f => ({
+    field: f, count: entries.filter(e=>fmt(e,f)).length,
+    pct: Math.round(entries.filter(e=>fmt(e,f)).length/entries.length*100)
   })).sort((a,b)=>b.count-a.count);
-
-  const archivalCount = entries.filter(e=>e.type==='archival').length;
-  const archivalNote  = archivalCount ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:8px;">${archivalCount} archival entries scored against repository/collection/access fields.</div>` : '';
 
   document.getElementById('insights-panel-quality').innerHTML = `
     <div class="ins-stat-grid">
@@ -4981,8 +5089,7 @@ function renderInsightsQuality() {
         <div class="ins-bar-track"><div class="ins-bar-fill ${cls}" style="width:${Math.round(n/entries.length*100)}%"></div></div>
         <div class="ins-bar-count">${n}</div>
       </div>`).join('')}
-    <div class="ins-section-title">Field Fill Rate (non-archival)</div>
-    ${archivalNote}
+    <div class="ins-section-title">Field Fill Rate</div>
     ${fieldFill.map(({field,count,pct})=>`<div class="ins-bar-row">
       <div class="ins-bar-label" style="font-family:var(--mono)">${field}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill" style="width:${pct}%;background:${pct>80?'var(--green)':pct>50?'var(--amber)':'var(--red)'}"></div></div>
