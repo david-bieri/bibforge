@@ -2278,7 +2278,16 @@ function renderList() {
   renderVisible();
 }
 
+let _renderRaf = 0;
 function renderVisible() {
+  if (_renderRaf) return;
+  _renderRaf = requestAnimationFrame(() => {
+    _renderRaf = 0;
+    _renderVisibleNow();
+  });
+}
+
+function _renderVisibleNow() {
   const wrap  = document.getElementById('list-scroll');
   const items = document.getElementById('list-items');
   if (!wrap) return;
@@ -2295,18 +2304,22 @@ function renderVisible() {
     const e = filtered[i];
     const jel = fmt(e,'jel');
     const sel = e.key === selected ? ' selected' : '';
-    html += `<div class="entry-row${sel}" onclick="selectEntry('${e.key.replace(/'/g,"\\'")}')">
-      <div class="row-type ${typeClass(e.type)}">${e.type}</div>
+    const title = stripBraces(fmt(e,'title'));
+    const year = fmt(e,'year');
+    const venue = getVenue(e);
+    const jelChips = jel ? jel.split(/[;,\s]+/).filter(Boolean).slice(0,3).join(' ') : '';
+    html += `<div class="entry-row${sel}" data-key="${escHtml(e.key)}">
+      <div class="row-type ${typeClass(e.type)}">${escHtml(e.type)}</div>
       <div class="row-main">
-        <div class="row-authors">${stripBraces(getAuthors(e))}</div>
-        <div class="row-title">${stripBraces(fmt(e,'title')) || '<em style="color:var(--text3)">(no title)</em>'}</div>
+        <div class="row-authors">${escHtml(stripBraces(getAuthors(e)))}</div>
+        <div class="row-title">${title ? escHtml(title) : '<em style="color:var(--text3)">(no title)</em>'}</div>
         <div class="row-meta">
-          ${fmt(e,'year') ? `<span class="row-year">${fmt(e,'year')}</span>` : ''}
-          ${getVenue(e) ? `<span class="row-venue">${stripBraces(getVenue(e))}</span>` : ''}
-          ${jel ? `<span class="row-jel">${jel.split(/[;,\s]+/).slice(0,3).join(' ')}</span>` : ''}
+          ${year ? `<span class="row-year">${escHtml(year)}</span>` : ''}
+          ${venue ? `<span class="row-venue">${escHtml(stripBraces(venue))}</span>` : ''}
+          ${jelChips ? `<span class="row-jel">${escHtml(jelChips)}</span>` : ''}
         </div>
       </div>
-      <div class="row-key">${e.key}</div>
+      <div class="row-key">${escHtml(e.key)}</div>
     </div>`;
   }
   items.innerHTML = html;
@@ -2316,35 +2329,42 @@ function renderVisible() {
 //  SIDEBAR FILTERS BUILD
 // ════════════════════════════════════════════════════
 function buildSidebarFilters() {
-  // Type counts
+  // Single pass: type counts, JEL set, LOC set
   const counts = {};
-  entries.forEach(e => { counts[e.type] = (counts[e.type]||0)+1; });
+  const jelSet = new Set();
+  const locSet = new Set();
+  for (const e of entries) {
+    counts[e.type] = (counts[e.type]||0)+1;
+    const jelRaw = fmt(e,'jel');
+    if (jelRaw) {
+      for (const c of jelRaw.split(/[;,\s]+/)) {
+        if (c.length >= 2) jelSet.add(c.trim().toUpperCase());
+      }
+    }
+    const l = fmt(e,'lcc');
+    if (l) locSet.add(l.split(' ')[0]);
+  }
+
   const types = [['','All',entries.length],...Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
   const tf = document.getElementById('type-filters');
   tf.innerHTML = types.map(([val,label,cnt]) => `
-    <div class="filter-opt${filterType===val?' active':''}" onclick="setTypeFilter('${val}')">
-      <span>${label}</span>
+    <div class="filter-opt${filterType===val?' active':''}" data-type="${escHtml(val)}" role="button" tabindex="0">
+      <span>${escHtml(label)}</span>
       <span class="count">${cnt.toLocaleString()}</span>
     </div>`).join('');
 
   // JEL filter select
-  const jelSet = new Set();
-  entries.forEach(e => {
-    (fmt(e,'jel')||'').split(/[;,\s]+/).forEach(c => { if(c.length>=2) jelSet.add(c.trim().toUpperCase()); });
-  });
   const jelSelect = document.getElementById('jel-filter');
   const usedTop = [...jelSet].filter(c=>c.length===1).sort();
   const usedSub = [...jelSet].filter(c=>c.length>=2).sort();
   jelSelect.innerHTML = '<option value="">All JEL codes</option>'
-    + usedTop.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||'Unknown'}</option>`).join('')
-    + usedSub.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||''}</option>`).join('');
+    + usedTop.map(c=>`<option value="${escHtml(c)}">${escHtml(c)} — ${escHtml(JEL_MAP[c]||'Unknown')}</option>`).join('')
+    + usedSub.map(c=>`<option value="${escHtml(c)}">${escHtml(c)} — ${escHtml(JEL_MAP[c]||'')}</option>`).join('');
 
   // LOC filter
-  const locSet = new Set();
-  entries.forEach(e => { const l=fmt(e,'lcc'); if(l) locSet.add(l.split(' ')[0]); });
   const locSelect = document.getElementById('loc-filter');
   locSelect.innerHTML = '<option value="">All LOC classes</option>'
-    + [...locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+    + [...locSet].sort().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
 }
 
 function setTypeFilter(val) {
@@ -2385,11 +2405,11 @@ function showDetail(e) {
   const fields = document.getElementById('detail-fields');
   const rows = [];
 
-  const addField = (label, val, cls='') => {
+  const addField = (label, val, cls='', isHtml=false) => {
     if (!val) return;
     rows.push(`<div class="field-row">
-      <div class="field-label">${label}</div>
-      <div class="field-value ${cls}">${val}</div>
+      <div class="field-label">${escHtml(label)}</div>
+      <div class="field-value ${escHtml(cls)}">${isHtml ? val : escHtml(val)}</div>
     </div>`);
   };
 
@@ -2402,12 +2422,18 @@ function showDetail(e) {
   if (fmt(e,'edition')) addField('Edition', fmt(e,'edition'));
   if (fmt(e,'editor')) addField('Editor(s)', stripBraces(fmt(e,'editor')));
 
-  if (fmt(e,'doi')) rows.push(`<div class="field-row">
-    <div class="field-label">DOI</div>
-    <div class="field-value doi" onclick="window.open('https://doi.org/${fmt(e,'doi')}','_blank')">${fmt(e,'doi')}</div>
-  </div>`);
+  if (fmt(e,'doi')) {
+    const doi = fmt(e,'doi');
+    rows.push(`<div class="field-row">
+      <div class="field-label">DOI</div>
+      <div class="field-value doi" data-doi="${escHtml(doi)}">${escHtml(doi)}</div>
+    </div>`);
+  }
   if (fmt(e,'isbn')) addField('ISBN', fmt(e,'isbn'), 'mono');
-  if (fmt(e,'url'))  addField('URL',  `<a href="${fmt(e,'url')}" target="_blank" style="color:var(--blue)">${fmt(e,'url').slice(0,50)}…</a>`);
+  if (fmt(e,'url')) {
+    const url = fmt(e,'url');
+    addField('URL', `<a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">${escHtml(url.slice(0,50))}…</a>`, '', true);
+  }
 
   // JEL
   const jelCodes = (fmt(e,'jel')||'').split(/[;,\s]+/).filter(c=>c.length>=2);
@@ -2415,8 +2441,8 @@ function showDetail(e) {
     rows.push(`<div class="field-row">
       <div class="field-label">JEL Codes</div>
       <div class="field-value">
-        <div class="jel-tags">${jelCodes.map(c=>`<span class="jel-tag" title="${JEL_MAP[c]||''}">${c}</span>`).join('')}</div>
-        ${jelCodes.map(c=>JEL_MAP[c]?`<div style="font-size: 13px;color:var(--text3);margin-top:2px">${c}: ${JEL_MAP[c]}</div>`:'').join('')}
+        <div class="jel-tags">${jelCodes.map(c=>`<span class="jel-tag" title="${escHtml(JEL_MAP[c]||'')}">${escHtml(c)}</span>`).join('')}</div>
+        ${jelCodes.map(c=>JEL_MAP[c]?`<div style="font-size: 13px;color:var(--text3);margin-top:2px">${escHtml(c)}: ${escHtml(JEL_MAP[c])}</div>`:'').join('')}
       </div>
     </div>`);
   }
@@ -2427,14 +2453,14 @@ function showDetail(e) {
     const locName = LOC.find(([c])=>cls.startsWith(c));
     rows.push(`<div class="field-row">
       <div class="field-label">LOC Classification</div>
-      <div class="field-value"><span class="loc-tag">${cls}</span>${locName?` <span style="font-size: 13px;color:var(--text3)">${locName[1]}</span>`:''}</div>
+      <div class="field-value"><span class="loc-tag">${escHtml(cls)}</span>${locName?` <span style="font-size: 13px;color:var(--text3)">${escHtml(locName[1])}</span>`:''}</div>
     </div>`);
   }
 
   if (fmt(e,'keywords')) addField('Keywords', fmt(e,'keywords'));
   if (fmt(e,'abstract')) rows.push(`<div class="field-row">
     <div class="field-label">Abstract</div>
-    <div class="field-value abstract">${fmt(e,'abstract')}</div>
+    <div class="field-value abstract">${escHtml(fmt(e,'abstract'))}</div>
   </div>`);
   if (fmt(e,'note')) addField('Note', fmt(e,'note'));
 
@@ -2444,14 +2470,14 @@ function showDetail(e) {
     const dsLabel = {crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual','csv-import':'CSV Import','photo-barcode':'Photo (barcode)','photo-vision':'Photo (Vision)'}[ds] || ds;
     rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
       <div class="field-label">Data Source</div>
-      <div class="field-value"><span class="datasource-badge ${ds}">${dsLabel}</span></div>
+      <div class="field-value"><span class="datasource-badge ${escHtml(ds)}">${escHtml(dsLabel)}</span></div>
     </div>`);
   }
 
   // Citation key
   rows.push(`<div class="field-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
     <div class="field-label">Citation Key</div>
-    <div class="field-value mono">${e.key}</div>
+    <div class="field-value mono">${escHtml(e.key)}</div>
   </div>`);
 
   fields.innerHTML = rows.join('');
@@ -2693,7 +2719,12 @@ function highlightBibtex(raw) {
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
 }
 
 // ════════════════════════════════════════════════════
@@ -2916,10 +2947,6 @@ function pbShowReview() {
   actionBtn.onclick = pbRunLookups;
 }
 
-function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 function pbToggleBook(i, checked) {
   pbState.books[i].include = checked;
   pbUpdateCount();
@@ -3116,16 +3143,12 @@ function pbParseOLSearch(doc, src) {
 
 // ── Output Helpers ─────────────────────────────────────────────────────────
 
-function pbAddToLibrary(entries) {
-  if (!window.entries) window.entries = [];
-  entries.forEach(e => window.entries.push(e));
-  if (typeof refreshEntryList === 'function') refreshEntryList();
-  if (typeof renderVirtualList === 'function') renderVirtualList();
+function pbAddToLibrary(newEntries) {
+  for (const e of newEntries) entries.push(e);
   closeModal('photo-batch-modal');
-  if (typeof showToast === 'function') {
-    showToast(`${entries.length} entr${entries.length!==1?'ies':'y'} added to library`);
-  }
-  // Enable export button
+  buildSidebarFilters();
+  runFilter();
+  toast(`${newEntries.length} entr${newEntries.length!==1?'ies':'y'} added to library`, 'success');
   const expBtn = document.getElementById('btn-export');
   if (expBtn) expBtn.disabled = false;
 }
@@ -4004,17 +4027,18 @@ function openStatsModal() {
   const years = entries.map(e => parseInt(fmt(e,'year'))).filter(y => y > 1400 && y <= 2030);
   let yearHtml = '';
   if (years.length) {
-    const minY = Math.min(...years);
-    const maxY = Math.max(...years);
+    let minY = Infinity, maxY = -Infinity;
+    for (const y of years) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
     const span = maxY - minY || 1;
     const buckets = 24;
     const bucketSize = Math.ceil(span / buckets);
     const hist = Array(buckets).fill(0);
-    years.forEach(y => {
+    for (const y of years) {
       const b = Math.min(Math.floor((y - minY) / bucketSize), buckets-1);
       hist[b]++;
-    });
-    const maxH = Math.max(...hist);
+    }
+    let maxH = 0;
+    for (const h of hist) if (h > maxH) maxH = h;
     yearHtml = `
       <div class="stats-bar-section">
         <div class="stats-bar-title">Publication years (${minY}–${maxY})</div>
@@ -4056,7 +4080,7 @@ function openStatsModal() {
       <div class="stats-bar-title">By entry type</div>
       ${typesSorted.map(([t,c]) => `
         <div class="stats-bar-row">
-          <div class="stats-bar-label">${t}</div>
+          <div class="stats-bar-label">${escHtml(t)}</div>
           <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${Math.round(c/maxType*100)}%"></div></div>
           <div class="stats-bar-count">${c.toLocaleString()}</div>
         </div>`).join('')}
@@ -4066,7 +4090,7 @@ function openStatsModal() {
       <div class="stats-bar-title">By data source</div>
       ${dsSorted.map(([ds,c]) => `
         <div class="stats-bar-row">
-          <div class="stats-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual'}[ds]||ds}</div>
+          <div class="stats-bar-label">${escHtml({crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books',manual:'Manual'}[ds]||ds)}</div>
           <div class="stats-bar-track"><div class="stats-bar-fill blue" style="width:${Math.round(c/total*100)}%"></div></div>
           <div class="stats-bar-count">${c.toLocaleString()}</div>
         </div>`).join('')}
@@ -4378,9 +4402,9 @@ async function suggestJEL() {
     } else {
       const rankLabels = ['1st', '2nd', '3rd'];
       chips.innerHTML = top3.map((c, i) => `
-        <div class="suggest-chip" id="jchip-${c.code}" onclick="acceptJelSuggestion('${c.code}', '${c.description.replace(/'/g,"\\'")}')">
-          <span class="suggest-chip-code">${c.code}</span>
-          <span class="suggest-chip-desc">${c.description}</span>
+        <div class="suggest-chip" id="jchip-${escHtml(c.code)}" role="button" tabindex="0" data-jel-code="${escHtml(c.code)}">
+          <span class="suggest-chip-code">${escHtml(c.code)}</span>
+          <span class="suggest-chip-desc">${escHtml(c.description)}</span>
           <span class="suggest-chip-rank">${rankLabels[i]}</span>
           <span class="suggest-chip-add">+ add</span>
         </div>`).join('');
@@ -4392,7 +4416,7 @@ async function suggestJEL() {
         : 'Source: ' + (aeaJelTree.length > 50 ? 'AEA EconLit tree' : 'built-in JEL table');
     }
   } catch(e) {
-    chips.innerHTML = `<span style="font-family:var(--mono);font-size: 12px;color:var(--red)">Error: ${e.message}</span>`;
+    chips.innerHTML = `<span style="font-family:var(--mono);font-size: 12px;color:var(--red)">Error: ${escHtml(e.message)}</span>`;
   }
 
   btn.disabled = false; btn.classList.remove('loading');
@@ -4463,7 +4487,7 @@ const LOC_EXTENDED = [
   ['Z',  'Bibliography, Library Science', 'bibliography library information cataloging archives reference'],
 ];
 
-const BOOK_TYPES = new Set(['book','inbook','incollection','proceedings']);
+const BOOK_TYPES = new Set(['book','inbook','incollection','inproceedings','proceedings']);
 
 function suggestLOC() {
   const btn = document.getElementById('loc-suggest-btn');
@@ -4514,9 +4538,9 @@ function suggestLOC() {
   }
 
   chips.innerHTML = scored.map((c, i) => `
-    <div class="loc-suggest-chip" id="lchip-${c.code}" onclick="acceptLocSuggestion('${c.code}')">
-      <span class="loc-chip-code">${c.code}</span>
-      <span class="loc-chip-desc">${c.desc}</span>
+    <div class="loc-suggest-chip" id="lchip-${escHtml(c.code)}" role="button" tabindex="0" data-loc-code="${escHtml(c.code)}">
+      <span class="loc-chip-code">${escHtml(c.code)}</span>
+      <span class="loc-chip-desc">${escHtml(c.desc)}</span>
       <span class="loc-chip-add">apply</span>
     </div>`).join('');
 }
@@ -4567,6 +4591,58 @@ function init() {
 
   // Virtual scroll
   document.getElementById('list-scroll').addEventListener('scroll', renderVisible, {passive:true});
+
+  // Delegated click on entry rows (replaces inline onclick to prevent XSS via data values)
+  document.getElementById('list-items').addEventListener('click', e => {
+    const row = e.target.closest('.entry-row');
+    if (row && row.dataset.key) selectEntry(row.dataset.key);
+  });
+
+  // Delegated click on DOI value in detail panel
+  document.getElementById('detail-fields').addEventListener('click', e => {
+    const doiEl = e.target.closest('.field-value.doi');
+    if (doiEl && doiEl.dataset.doi) {
+      window.open('https://doi.org/' + encodeURI(doiEl.dataset.doi), '_blank', 'noopener,noreferrer');
+    }
+  });
+
+  // Delegated click + keyboard on sidebar type filters
+  const typeFilters = document.getElementById('type-filters');
+  const handleTypeFilter = e => {
+    const opt = e.target.closest('.filter-opt');
+    if (!opt) return;
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.type === 'keydown') e.preventDefault();
+    setTypeFilter(opt.dataset.type || '');
+  };
+  typeFilters.addEventListener('click', handleTypeFilter);
+  typeFilters.addEventListener('keydown', handleTypeFilter);
+
+  // Delegated click + keyboard for JEL/LOC suggestion chips
+  const jelChips = document.getElementById('jel-suggestion-chips');
+  if (jelChips) {
+    const handleJel = e => {
+      const chip = e.target.closest('.suggest-chip');
+      if (!chip || !chip.dataset.jelCode) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      acceptJelSuggestion(chip.dataset.jelCode);
+    };
+    jelChips.addEventListener('click', handleJel);
+    jelChips.addEventListener('keydown', handleJel);
+  }
+  const locChips = document.getElementById('loc-suggestion-chips');
+  if (locChips) {
+    const handleLoc = e => {
+      const chip = e.target.closest('.loc-suggest-chip');
+      if (!chip || !chip.dataset.locCode) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      acceptLocSuggestion(chip.dataset.locCode);
+    };
+    locChips.addEventListener('click', handleLoc);
+    locChips.addEventListener('keydown', handleLoc);
+  }
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
@@ -4643,7 +4719,7 @@ function init() {
 
   // Build initial type filter
   const tf = document.getElementById('type-filters');
-  tf.innerHTML = `<div class="filter-opt active" onclick="setTypeFilter('')"><span>All</span><span class="count">0</span></div>`;
+  tf.innerHTML = `<div class="filter-opt active" data-type="" role="button" tabindex="0"><span>All</span><span class="count">0</span></div>`;
 
   // Wire LOC button state to entry-type selector in the edit form
   // (the form type selector is only in the DOM when editing, so use event delegation)
@@ -4910,7 +4986,7 @@ function renderInsightsOverview() {
     <div class="ins-section-title">Datasource Breakdown</div>
     ${Object.entries(sources).sort((a,b)=>b[1]-a[1]).map(([ds,c])=>
       `<div class="ins-bar-row">
-        <div class="ins-bar-label">${{crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import',manual:'Manual'}[ds]||ds}</div>
+        <div class="ins-bar-label">${escHtml({crossref:'CrossRef',openlibrary:'Open Library',googlebooks:'Google Books','csv-import':'CSV Import',manual:'Manual','photo-barcode':'Photo (barcode)','photo-vision':'Photo (Vision)'}[ds]||ds)}</div>
         <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(c/total*100)}%"></div></div>
         <div class="ins-bar-count">${c.toLocaleString()}</div>
       </div>`).join('')}
@@ -4927,16 +5003,18 @@ function renderInsightsAge() {
   const sorted = [...ages].sort((a,b)=>a-b);
   const median = sorted[Math.floor(sorted.length/2)];
   const avg = (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1);
-  const oldest = Math.max(...ages);
-  const newest = Math.min(...ages);
+  let oldest = -Infinity, newest = Infinity;
+  for (const a of ages) { if (a > oldest) oldest = a; if (a < newest) newest = a; }
 
   // Year histogram — 20 buckets
-  const minY = Math.min(...years); const maxY = Math.max(...years);
+  let minY = Infinity, maxY = -Infinity;
+  for (const y of years) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
   const span = maxY - minY + 1; const buckets = Math.min(40, span);
   const bucketSize = span / buckets;
   const hist = new Array(buckets).fill(0);
-  years.forEach(y => { const b=Math.min(Math.floor((y-minY)/bucketSize), buckets-1); hist[b]++; });
-  const maxH = Math.max(...hist);
+  for (const y of years) { const b=Math.min(Math.floor((y-minY)/bucketSize), buckets-1); hist[b]++; }
+  let maxH = 0;
+  for (const h of hist) if (h > maxH) maxH = h;
 
   // Decade breakdown
   const decades = {};
@@ -4969,7 +5047,7 @@ function renderInsightsAuthors() {
   entries.forEach(e => {
     const a = fmt(e,'author') || fmt(e,'editor'); if (!a) return;
     a.split(/\s+and\s+/i).forEach(p => {
-      const sn = p.split(',')[0].trim().replace(/[{}\]/g,'');
+      const sn = p.split(',')[0].trim().replace(/[\[\]{}]/g,'');
       if (sn.length > 1) authorCount[sn] = (authorCount[sn]||0) + 1;
     });
   });
@@ -4987,7 +5065,7 @@ function renderInsightsAuthors() {
     </div>
     <div class="ins-section-title">Top Authors (by entry count)</div>
     ${top.map(([author,c])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label" title="${author}">${author}</div>
+      <div class="ins-bar-label" title="${escHtml(author)}">${escHtml(author)}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill" style="width:${Math.round(c/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${c}</div>
     </div>`).join('')}
@@ -5013,7 +5091,7 @@ function renderInsightsVenues() {
     </div>
     <div class="ins-section-title">Top Journals / Venues</div>
     ${top.map(([v,c])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label" title="${v}">${v.length>22?v.slice(0,22)+'…':v}</div>
+      <div class="ins-bar-label" title="${escHtml(v)}">${escHtml(v.length>22?v.slice(0,22)+'…':v)}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(c/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${c}</div>
     </div>`).join('')}
@@ -5049,13 +5127,13 @@ function renderInsightsJel() {
     </div>
     <div class="ins-section-title">Top JEL Codes</div>
     ${topJel.map(([c,n])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label"><span class="ins-jel-cell">${c}</span> <span style="font-size:12px;color:var(--text3)">${(JEL_MAP[c]||'').slice(0,28)}</span></div>
+      <div class="ins-bar-label"><span class="ins-jel-cell">${escHtml(c)}</span> <span style="font-size:12px;color:var(--text3)">${escHtml((JEL_MAP[c]||'').slice(0,28))}</span></div>
       <div class="ins-bar-track"><div class="ins-bar-fill blue" style="width:${Math.round(n/maxC*100)}%"></div></div>
       <div class="ins-bar-count">${n}</div>
     </div>`).join('')}
     <div class="ins-section-title">Category Roll-up</div>
     ${topLetters.map(([l,n])=>`<div class="ins-bar-row">
-      <div class="ins-bar-label">${l} — ${JEL_MAP[l]||''}</div>
+      <div class="ins-bar-label">${escHtml(l)} — ${escHtml(JEL_MAP[l]||'')}</div>
       <div class="ins-bar-track"><div class="ins-bar-fill green" style="width:${Math.round(n/topLetters[0][1]*100)}%"></div></div>
       <div class="ins-bar-count">${n}</div>
     </div>`).join('')}
