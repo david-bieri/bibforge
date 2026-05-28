@@ -1085,9 +1085,9 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       <div class="sb-section">
         <div class="sb-title">Year Range</div>
         <div class="range-wrap">
-          <input type="number" class="range-input" id="year-from" placeholder="1900" min="1400" max="2100" oninput="applyFilters()">
+          <input type="number" class="range-input" id="year-from" placeholder="1900" min="1400" max="2100" oninput="debouncedApplyFilters()">
           <span class="range-sep">–</span>
-          <input type="number" class="range-input" id="year-to" placeholder="2026" min="1400" max="2100" oninput="applyFilters()">
+          <input type="number" class="range-input" id="year-to" placeholder="2026" min="1400" max="2100" oninput="debouncedApplyFilters()">
         </div>
       </div>
 
@@ -2039,6 +2039,7 @@ function findEntry(key) {
 // ════════════════════════════════════════════════════
 function parseBibTeX(src) {
   const results = [];
+  const macros = {}; // L13: @string macros, lowercase name → expanded value
   let i = 0;
   const n = src.length;
 
@@ -2075,6 +2076,29 @@ function parseBibTeX(src) {
     return src.slice(start, i);
   }
 
+  // Read a (possibly concatenated) value with # support and macro substitution.
+  function readValue() {
+    if (src[i] === '{') return readBraceValue();
+    if (src[i] === '"') return readQuoteValue();
+    // Concatenation chain — numbers, bare names (macros), and quoted/brace pieces
+    const parts = [];
+    while (i < n) {
+      skipWS();
+      if (src[i] === '{') parts.push(readBraceValue());
+      else if (src[i] === '"') parts.push(readQuoteValue());
+      else {
+        const tok = readToken();
+        if (!tok) break;
+        if (/^\d+$/.test(tok)) parts.push(tok);
+        else parts.push(macros[tok.toLowerCase()] !== undefined ? macros[tok.toLowerCase()] : tok);
+      }
+      skipWS();
+      if (src[i] === '#') { i++; continue; }
+      break;
+    }
+    return parts.join('');
+  }
+
   while (i < n) {
     // Seek @
     while (i < n && src[i] !== '@') i++;
@@ -2104,13 +2128,20 @@ function parseBibTeX(src) {
     }
 
     if (type === 'string') {
-      // skip
-      let depth = 1;
-      while (i < n && depth > 0) {
-        if (src[i] === '{') depth++;
-        else if (src[i] === '}') depth--;
-        i++;
+      // L13: parse @string{name = "value"} (or {value}) into macros map
+      skipWS();
+      const nameStart = i;
+      while (i < n && src[i] !== '=' && src[i] !== '}' && src[i] !== ')') i++;
+      const macroName = src.slice(nameStart, i).trim().toLowerCase();
+      if (src[i] === '=') {
+        i++; // skip =
+        skipWS();
+        const value = readValue();
+        if (macroName) macros[macroName] = value;
+        skipWS();
       }
+      // consume to closer
+      if (src[i] === closer) i++;
       continue;
     }
 
@@ -2149,29 +2180,8 @@ function parseBibTeX(src) {
       i++; // skip =
       skipWS();
 
-      // Value
-      let value = '';
-      if (src[i] === '{') {
-        value = readBraceValue();
-      } else if (src[i] === '"') {
-        value = readQuoteValue();
-      } else {
-        // could be number or concatenation
-        const parts = [];
-        while (i < n) {
-          skipWS();
-          if (src[i] === '{') parts.push(readBraceValue());
-          else if (src[i] === '"') parts.push(readQuoteValue());
-          else {
-            const tok = readToken();
-            if (tok && tok !== '#') parts.push(tok);
-          }
-          skipWS();
-          if (src[i] === '#') { i++; continue; }
-          break;
-        }
-        value = parts.join('');
-      }
+      // Value (with macro substitution + # concatenation)
+      const value = readValue();
 
       if (fieldName) fields[fieldName] = value;
 
@@ -2230,7 +2240,41 @@ function getVenue(e) {
   return fmt(e,'journal') || fmt(e,'booktitle') || fmt(e,'publisher') || fmt(e,'institution') || fmt(e,'school') || '';
 }
 
-function stripBraces(s) { return s.replace(/[{}\\]/g, ''); }
+// L8: stripBraces preserves accented characters from LaTeX escapes.
+// Translates \'{e} → é, \`{a} → à, \"{u} → ü, etc., before stripping braces.
+const LATEX_ACCENTS = {
+  // command → combining diacritical mark (applied to following letter)
+  "'": '́', // acute
+  '`': '̀', // grave
+  '"': '̈', // umlaut/diaeresis
+  '^': '̂', // circumflex
+  '~': '̃', // tilde
+  '=': '̄', // macron
+  '.': '̇', // dot above
+  'c': '̧', // cedilla
+  'u': '̆', // breve
+  'v': '̌', // caron / háček
+  'H': '̋', // double acute
+  'd': '̣', // dot below
+  'b': '̱', // macron below
+  'k': '̨', // ogonek
+  'r': '̊', // ring above
+};
+function applyLatexAccents(s) {
+  if (!s || s.indexOf('\\') < 0) return s;
+  // \X{letter} or \X letter — where X is one of the accent commands.
+  // Build regex: backslash, accent-char (escaped where needed), optional {letter} or space+letter
+  return s.replace(/\\([`'"^~=.cuvHdbkr])\{?([A-Za-z])\}?/g, (m, cmd, letter) => {
+    const mark = LATEX_ACCENTS[cmd];
+    if (!mark) return m;
+    // Normalize composed form so the result is a single codepoint where possible
+    return (letter + mark).normalize('NFC');
+  });
+}
+function stripBraces(s) {
+  if (!s) return '';
+  return applyLatexAccents(s).replace(/[{}\\]/g, '');
+}
 
 function typeClass(t) {
   const m = { article:'type-article', book:'type-book', inbook:'type-inbook',
@@ -2269,6 +2313,14 @@ function applyFilters() {
   filterLOC        = document.getElementById('loc-filter').value;
   filterDatasource = document.getElementById('datasource-filter').value;
   runFilter();
+}
+
+// L14: debounced wrapper for year-from/to oninput so we don't run the whole
+// filter pipeline on every keystroke.
+let _applyFiltersTimer;
+function debouncedApplyFilters() {
+  clearTimeout(_applyFiltersTimer);
+  _applyFiltersTimer = setTimeout(applyFilters, 200);
 }
 
 function runFilter() {
