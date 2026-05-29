@@ -2316,10 +2316,22 @@ function renderVisible() {
 //  SIDEBAR FILTERS BUILD
 // ════════════════════════════════════════════════════
 function buildSidebarFilters() {
-  // Type counts
-  const counts = {};
-  entries.forEach(e => { counts[e.type] = (counts[e.type]||0)+1; });
-  const types = [['','All',entries.length],...Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
+  // Single-pass aggregation over entries.
+  const agg = { typeCounts: {}, jelSet: new Set(), locSet: new Set() };
+  entries.forEach(e => {
+    agg.typeCounts[e.type] = (agg.typeCounts[e.type]||0) + 1;
+    const jelRaw = fmt(e,'jel');
+    if (jelRaw) {
+      jelRaw.split(/[;,\s]+/).forEach(c => {
+        if (c.length >= 2) agg.jelSet.add(c.trim().toUpperCase());
+      });
+    }
+    const lcc = fmt(e,'lcc');
+    if (lcc) agg.locSet.add(lcc.split(' ')[0]);
+  });
+
+  // Type filter row
+  const types = [['','All',entries.length],...Object.entries(agg.typeCounts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
   const tf = document.getElementById('type-filters');
   tf.innerHTML = types.map(([val,label,cnt]) => `
     <div class="filter-opt${filterType===val?' active':''}" onclick="setTypeFilter('${val}')">
@@ -2328,23 +2340,17 @@ function buildSidebarFilters() {
     </div>`).join('');
 
   // JEL filter select
-  const jelSet = new Set();
-  entries.forEach(e => {
-    (fmt(e,'jel')||'').split(/[;,\s]+/).forEach(c => { if(c.length>=2) jelSet.add(c.trim().toUpperCase()); });
-  });
   const jelSelect = document.getElementById('jel-filter');
-  const usedTop = [...jelSet].filter(c=>c.length===1).sort();
-  const usedSub = [...jelSet].filter(c=>c.length>=2).sort();
+  const usedTop = [...agg.jelSet].filter(c=>c.length===1).sort();
+  const usedSub = [...agg.jelSet].filter(c=>c.length>=2).sort();
   jelSelect.innerHTML = '<option value="">All JEL codes</option>'
     + usedTop.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||'Unknown'}</option>`).join('')
     + usedSub.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||''}</option>`).join('');
 
-  // LOC filter
-  const locSet = new Set();
-  entries.forEach(e => { const l=fmt(e,'lcc'); if(l) locSet.add(l.split(' ')[0]); });
+  // LOC filter select
   const locSelect = document.getElementById('loc-filter');
   locSelect.innerHTML = '<option value="">All LOC classes</option>'
-    + [...locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+    + [...agg.locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
 function setTypeFilter(val) {
