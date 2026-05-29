@@ -2855,6 +2855,8 @@ function openPhotoBatch() {
 }
 
 function pbClose() {
+  // Cancel any inflight Vision call or per-book lookup before tearing down.
+  abortModalFetches('photo-batch-modal');
   closeModal('photo-batch-modal');
 }
 
@@ -3975,6 +3977,9 @@ async function autoLoadLibrary() {
 //  FILE IMPORT / EXPORT
 // ════════════════════════════════════════════════════
 function triggerImport() {
+  // If autoload is mid-fetch and the user is overriding with a manual file,
+  // cancel the in-flight request so its handler doesn't clobber state later.
+  abortModalFetches('autoload');
   document.getElementById('file-input').click();
 }
 
@@ -4392,8 +4397,14 @@ function openSettings() {
 // ════════════════════════════════════════════════════
 //  FETCH WITH TIMEOUT + ABORT CONTROLLER REGISTRY
 // ════════════════════════════════════════════════════
-// Long-running fetches register their AbortController under a modal id
-// (or a synthetic owner) so closing the modal can abort them.
+// Two parallel tracking mechanisms:
+//   1. Named module-level controllers for the two long-running flows
+//      (Photo Batch, auto-load) — easy to introspect / abort imperatively.
+//   2. An owner-keyed registry of every in-flight controller so closing a
+//      modal can abort *all* fetches it started, including transient ones.
+let currentAutoloadController = null;
+let currentPhotoBatchController = null;
+
 const _abortRegistry = new Map(); // owner -> Set<AbortController>
 
 function registerAbort(owner, controller) {
@@ -4408,10 +4419,28 @@ function unregisterAbort(owner, controller) {
 }
 function abortModalFetches(owner) {
   const set = _abortRegistry.get(owner);
-  if (!set) return;
-  for (const c of set) { try { c.abort(); } catch {} }
-  _abortRegistry.delete(owner);
+  if (set) {
+    for (const c of set) { try { c.abort(); } catch {} }
+    _abortRegistry.delete(owner);
+  }
+  if (owner === 'photo-batch-modal' && currentPhotoBatchController) {
+    try { currentPhotoBatchController.abort(); } catch {}
+    currentPhotoBatchController = null;
+  }
+  if (owner === 'autoload' && currentAutoloadController) {
+    try { currentAutoloadController.abort(); } catch {}
+    currentAutoloadController = null;
+  }
 }
+
+// Abort all in-flight requests when the page unloads — keeps phantom
+// callbacks from firing during teardown.
+window.addEventListener('beforeunload', () => {
+  for (const set of _abortRegistry.values()) {
+    for (const c of set) { try { c.abort(); } catch {} }
+  }
+  _abortRegistry.clear();
+});
 
 async function fetchWithTimeout(url, options = {}) {
   const { owner, signal: externalSignal, timeout, ...rest } = options;
@@ -4423,11 +4452,16 @@ async function fetchWithTimeout(url, options = {}) {
     else externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
   }
   if (owner) registerAbort(owner, controller);
+  // Track the most recently issued controller per long-running flow.
+  if (owner === 'autoload') currentAutoloadController = controller;
+  if (owner === 'photo-batch-modal') currentPhotoBatchController = controller;
   try {
     return await fetch(url, { ...rest, signal: controller.signal });
   } finally {
     clearTimeout(timer);
     if (owner) unregisterAbort(owner, controller);
+    if (owner === 'autoload' && currentAutoloadController === controller) currentAutoloadController = null;
+    if (owner === 'photo-batch-modal' && currentPhotoBatchController === controller) currentPhotoBatchController = null;
   }
 }
 
