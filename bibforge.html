@@ -3785,43 +3785,78 @@ async function autoLoadLibrary() {
   const pb = document.getElementById('progress-bar');
   pb.style.display = 'block'; pb.style.width = '20%';
 
+  // Distinct phases so we can categorize errors precisely.
+  let text;
   try {
     const response = await fetch(path, { cache: 'no-cache' });
-
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} — file not found at ${path}`);
+      const httpErr = new Error(`HTTP ${response.status}`);
+      httpErr.kind = 'network';
+      httpErr.status = response.status;
+      throw httpErr;
     }
-
     pb.style.width = '60%';
-    const text = await response.text();
+    text = await response.text();
     pb.style.width = '80%';
-
-    entries = parseBibTeX(text);
-    pb.style.width = '95%';
-
-    selected = null; editing = null;
-    showLibrary();
-    buildSidebarFilters();
-    runFilter();
-    document.getElementById('btn-export').disabled = false;
-
-    // Success state
+  } catch (err) {
     spinner.style.display = 'none';
+    statusEl.classList.add('fail');
+    const reason = err.status ? `HTTP ${err.status}` : 'network unreachable';
+    msgEl.innerHTML = `Could not reach <span class="autoload-path">${label}</span> — ${reason}`;
+    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
+    toast('Could not reach library URL — check your connection or URL.', 'error');
+    console.warn(`BibForge auto-load network failure for "${path}":`, err);
+    pb.style.width = '100%';
+    setTimeout(() => { pb.style.display = 'none'; pb.style.width = '0%'; }, 500);
+    return;
+  }
+
+  // Parse phase — separate error path with skipped-entry count.
+  let parsed, skipped = 0;
+  try {
+    const expected = (text.match(/@[A-Za-z]+\s*[{(]/g) || []).length;
+    parsed = parseBibTeX(text);
+    skipped = Math.max(0, expected - parsed.length);
+  } catch (err) {
+    spinner.style.display = 'none';
+    statusEl.classList.add('fail');
+    msgEl.innerHTML = `Could not parse <span class="autoload-path">${label}</span>`;
+    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
+    toast(`Library loaded but contains errors — ${err.message}`, 'error');
+    console.warn(`BibForge auto-load parse failure for "${path}":`, err);
+    pb.style.width = '100%';
+    setTimeout(() => { pb.style.display = 'none'; pb.style.width = '0%'; }, 500);
+    return;
+  }
+
+  entries = parsed;
+  pb.style.width = '95%';
+
+  selected = null; editing = null;
+  showLibrary();
+  buildSidebarFilters();
+  runFilter();
+  document.getElementById('btn-export').disabled = false;
+
+  spinner.style.display = 'none';
+
+  if (entries.length === 0) {
+    // Empty result — render an empty-state, not a silent no-op.
+    statusEl.classList.add('fail');
+    msgEl.innerHTML = `No entries found at <span class="autoload-path">${label}</span>`;
+    subEl.innerHTML = `The file was reachable but contained no usable BibTeX entries. <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    toast('No entries found at that URL.', 'info');
+  } else if (skipped > 0) {
+    // Partial parse — flag it.
+    statusEl.classList.add('ok');
+    msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span> · <span style="color:var(--amber)">${skipped} skipped</span>`;
+    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    toast(`Library loaded but contains errors — ${skipped} entr${skipped===1?'y':'ies'} skipped.`, 'error');
+  } else {
     statusEl.classList.add('ok');
     msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span>`;
     subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
-
     toast(`Auto-loaded ${entries.length.toLocaleString()} entries from ${label}.`, 'success');
-
-  } catch (err) {
-    // Graceful fallback — show manual import screen as normal
-    spinner.style.display = 'none';
-    statusEl.classList.add('fail');
-    msgEl.innerHTML = `Could not auto-load <span class="autoload-path">${label}</span> — ${err.message.includes('HTTP') ? err.message : 'file not found or path incorrect'}`;
-    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
-
-    console.warn(`BibForge auto-load: could not fetch "${path}". ` +
-      `Check BIBFORGE_CONFIG.autoLoad in the script. Error: ${err.message}`);
   }
 
   pb.style.width = '100%';
