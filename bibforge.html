@@ -966,6 +966,14 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
       Export .bib
     </button>
 
+    <!-- Settings -->
+    <button class="hbtn" id="btn-settings" onclick="openSettings()" title="Settings" style="padding:6px 8px;">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        <path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.6 3.4l-1.13 1.13M4.53 11.47L3.4 12.6M12.6 12.6l-1.13-1.13M4.53 4.53L3.4 3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </button>
+
     <!-- Theme toggle -->
     <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme">
       <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -1628,6 +1636,54 @@ body, #header, #sidebar, #list-wrap, #detail, .entry-row,
     <div class="modal-footer" id="photo-batch-footer">
       <button class="modal-btn secondary" onclick="pbClose()">Close</button>
       <button class="modal-btn primary" id="pb-action-btn" style="display:none;" onclick=""></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <div class="modal-close" onclick="closeModal('settings-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);line-height:1.55;margin:0 0 12px;">
+        Network and import preferences. Stored locally in your browser.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="set-fetch-timeout">Network timeout (ms)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="form-input mono" id="set-fetch-timeout" type="number"
+                 min="3000" max="60000" step="1000" style="width:120px;font-size:13px;"
+                 oninput="saveFetchTimeout(this.value)">
+          <span style="font-size:12px;color:var(--text3);" id="set-fetch-timeout-default">default 15000</span>
+          <a href="#" onclick="event.preventDefault();resetFetchTimeout()" style="font-size:12px;color:var(--blue);">Reset to default</a>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          How long to wait for any external API (CrossRef, Open Library, Google Books, AEA, Anthropic) before giving up. 3000–60000.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="set-photo-concurrency">Photo Batch concurrency</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="form-input mono" id="set-photo-concurrency" type="number"
+                 min="1" max="6" step="1" style="width:80px;font-size:13px;"
+                 oninput="savePhotoConcurrency(this.value)">
+          <span style="font-size:12px;color:var(--text3);" id="set-photo-concurrency-default">default 3</span>
+          <a href="#" onclick="event.preventDefault();resetPhotoConcurrency()" style="font-size:12px;color:var(--blue);">Reset to default</a>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          How many books to look up at the same time during Photo Batch import. 1–6. Higher is faster but more likely to hit rate limits.
+        </div>
+      </div>
+
+      <div id="settings-status" style="font-size:12px;color:var(--text3);min-height:16px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn primary" onclick="closeModal('settings-modal')">Done</button>
     </div>
   </div>
 </div>
@@ -2316,10 +2372,22 @@ function renderVisible() {
 //  SIDEBAR FILTERS BUILD
 // ════════════════════════════════════════════════════
 function buildSidebarFilters() {
-  // Type counts
-  const counts = {};
-  entries.forEach(e => { counts[e.type] = (counts[e.type]||0)+1; });
-  const types = [['','All',entries.length],...Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
+  // Single-pass aggregation over entries.
+  const agg = { typeCounts: {}, jelSet: new Set(), locSet: new Set() };
+  entries.forEach(e => {
+    agg.typeCounts[e.type] = (agg.typeCounts[e.type]||0) + 1;
+    const jelRaw = fmt(e,'jel');
+    if (jelRaw) {
+      jelRaw.split(/[;,\s]+/).forEach(c => {
+        if (c.length >= 2) agg.jelSet.add(c.trim().toUpperCase());
+      });
+    }
+    const lcc = fmt(e,'lcc');
+    if (lcc) agg.locSet.add(lcc.split(' ')[0]);
+  });
+
+  // Type filter row
+  const types = [['','All',entries.length],...Object.entries(agg.typeCounts).sort((a,b)=>b[1]-a[1]).map(([t,c])=>[t,t,c])];
   const tf = document.getElementById('type-filters');
   tf.innerHTML = types.map(([val,label,cnt]) => `
     <div class="filter-opt${filterType===val?' active':''}" onclick="setTypeFilter('${val}')">
@@ -2328,23 +2396,17 @@ function buildSidebarFilters() {
     </div>`).join('');
 
   // JEL filter select
-  const jelSet = new Set();
-  entries.forEach(e => {
-    (fmt(e,'jel')||'').split(/[;,\s]+/).forEach(c => { if(c.length>=2) jelSet.add(c.trim().toUpperCase()); });
-  });
   const jelSelect = document.getElementById('jel-filter');
-  const usedTop = [...jelSet].filter(c=>c.length===1).sort();
-  const usedSub = [...jelSet].filter(c=>c.length>=2).sort();
+  const usedTop = [...agg.jelSet].filter(c=>c.length===1).sort();
+  const usedSub = [...agg.jelSet].filter(c=>c.length>=2).sort();
   jelSelect.innerHTML = '<option value="">All JEL codes</option>'
     + usedTop.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||'Unknown'}</option>`).join('')
     + usedSub.map(c=>`<option value="${c}">${c} — ${JEL_MAP[c]||''}</option>`).join('');
 
-  // LOC filter
-  const locSet = new Set();
-  entries.forEach(e => { const l=fmt(e,'lcc'); if(l) locSet.add(l.split(' ')[0]); });
+  // LOC filter select
   const locSelect = document.getElementById('loc-filter');
   locSelect.innerHTML = '<option value="">All LOC classes</option>'
-    + [...locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+    + [...agg.locSet].sort().map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
 function setTypeFilter(val) {
@@ -2793,6 +2855,8 @@ function openPhotoBatch() {
 }
 
 function pbClose() {
+  // Cancel any inflight Vision call or per-book lookup before tearing down.
+  abortModalFetches('photo-batch-modal');
   closeModal('photo-batch-modal');
 }
 
@@ -2946,51 +3010,65 @@ async function pbRunLookups() {
   resultsList.innerHTML = '';
   const progressLabel = document.getElementById('pb-progress-label');
 
-  for (let i = 0; i < queue.length; i++) {
-    const b = queue[i];
-    progressLabel.textContent = `[${i+1}/${queue.length}] Looking up "${b.title.replace(/\?$/, '')}"…`;
-
+  // Pre-render placeholder rows for every queued book so users see the full
+  // list while parallel workers fill in statuses out-of-order.
+  queue.forEach(b => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:4px;font-size:12px;';
     row.innerHTML = `<span style="color:var(--text3);min-width:22px;font-variant-numeric:tabular-nums;">${b.index}.</span>
                      <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(b.title)}">${escHtml(b.title.replace(/\?$/,''))}</span>
-                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ looking up…</span>`;
+                     <span id="pb-row-st-${b.index}" style="color:var(--text3);white-space:nowrap;">⏳ pending…</span>`;
     resultsList.appendChild(row);
-    resultsList.scrollTop = resultsList.scrollHeight;
+  });
 
-    try {
-      let entry = null;
-      if (b.isbn && /\d{9,13}/.test(b.isbn)) {
-        entry = await pbFetchByIsbn(b.isbn);
-      }
-      if (!entry && b.title) {
-        entry = await pbFetchByTitle(b.title.replace(/\?$/,''), b.author);
-      }
+  const concurrency = Math.max(1, Math.min(6, getPhotoConcurrency()));
+  let cursor = 0, done = 0;
 
+  async function worker() {
+    while (true) {
+      const i = cursor++;
+      if (i >= queue.length) return;
+      const b = queue[i];
       const statusCell = document.getElementById(`pb-row-st-${b.index}`);
-      if (entry) {
-        if (pbState.shelfTag) entry.shelf = pbState.shelfTag;
-        b.entry  = entry;
-        b.status = 'ok';
-        statusCell.textContent = '✓ ' + (entry.key || '');
-        statusCell.style.color = 'var(--green)';
-      } else {
-        b.status = 'notfound';
-        statusCell.textContent = '⚠ not found';
-        statusCell.style.color = 'var(--amber)';
+      if (statusCell) { statusCell.textContent = '⏳ looking up…'; statusCell.style.color = 'var(--text3)'; }
+      try {
+        const result = await pbLookupWithBackoff(b);
+        if (result.rateLimited) {
+          b.status = 'ratelimited';
+          if (statusCell) { statusCell.textContent = '⏱ rate limited — try again later'; statusCell.style.color = 'var(--red)'; }
+        } else if (result.entry) {
+          const entry = result.entry;
+          if (pbState.shelfTag) entry.shelf = pbState.shelfTag;
+          b.entry = entry;
+          b.status = 'ok';
+          if (statusCell) { statusCell.textContent = '✓ ' + (entry.key || ''); statusCell.style.color = 'var(--green)'; }
+        } else {
+          b.status = 'notfound';
+          if (statusCell) { statusCell.textContent = '⚠ not found'; statusCell.style.color = 'var(--amber)'; }
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          b.status = 'aborted';
+          if (statusCell) { statusCell.textContent = '✗ cancelled'; statusCell.style.color = 'var(--text3)'; }
+          return; // user closed the modal
+        }
+        b.status = 'error';
+        if (statusCell) { statusCell.textContent = '✗ error'; statusCell.style.color = 'var(--red)'; }
       }
-    } catch(err) {
-      b.status = 'error';
-      const statusCell = document.getElementById(`pb-row-st-${b.index}`);
-      if (statusCell) { statusCell.textContent = '✗ error'; statusCell.style.color = 'var(--red)'; }
+      done++;
+      progressLabel.textContent = `[${done}/${queue.length}] Looking up books (concurrency ${concurrency})…`;
     }
   }
 
+  await Promise.all(Array.from({length: concurrency}, () => worker()));
+
   // Summary
-  const ok   = queue.filter(b => b.status === 'ok');
-  const fail = queue.filter(b => b.status !== 'ok');
+  const ok        = queue.filter(b => b.status === 'ok');
+  const rateLim   = queue.filter(b => b.status === 'ratelimited');
+  const fail      = queue.filter(b => b.status !== 'ok');
   progressLabel.innerHTML = `Done · <span style="color:var(--green);">${ok.length} entr${ok.length!==1?'ies':'y'} ready</span>` +
-    (fail.length ? ` · <span style="color:var(--amber);">${fail.length} unresolved</span>` : '');
+    (fail.length ? ` · <span style="color:var(--amber);">${fail.length} unresolved</span>` : '') +
+    (rateLim.length ? ` · <span style="color:var(--red);">${rateLim.length} rate-limited</span>` : '');
 
   // Footer buttons
   const footer = document.getElementById('photo-batch-footer');
@@ -3020,20 +3098,29 @@ async function pbRunLookups() {
 
 // ── Batch Lookup Helpers ─────────────────────────────────────────────────
 
+// Helper: throws RateLimitError on 429 so caller can apply exponential backoff.
+class RateLimitError extends Error { constructor(){ super('Rate limited'); this.name='RateLimitError'; } }
+
+async function pbApiFetch(url) {
+  const r = await fetchWithTimeout(url, { owner: 'photo-batch-modal' });
+  if (r.status === 429) throw new RateLimitError();
+  return r;
+}
+
 async function pbFetchByIsbn(isbn) {
   // Open Library first
   try {
-    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const r = await pbApiFetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
     const d = await r.json();
     const key = `ISBN:${isbn}`;
     if (d[key]) return pbParseOLData(d[key], isbn, 'photo-barcode');
-  } catch {}
+  } catch (e) { if (e instanceof RateLimitError) throw e; }
   // Google Books fallback
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const r = await pbApiFetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, isbn, 'photo-barcode');
-  } catch {}
+  } catch (e) { if (e instanceof RateLimitError) throw e; }
   return null;
 }
 
@@ -3041,17 +3128,39 @@ async function pbFetchByTitle(title, author) {
   const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
   // Open Library title+author search
   try {
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1`);
+    const r = await pbApiFetch(`https://openlibrary.org/search.json?q=${q}&limit=1`);
     const d = await r.json();
     if (d.docs?.length) return pbParseOLSearch(d.docs[0], 'photo-vision');
-  } catch {}
+  } catch (e) { if (e instanceof RateLimitError) throw e; }
   // Google Books title search
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await pbApiFetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     const d = await r.json();
     if (d.totalItems > 0 && d.items?.[0]) return pbParseGBData(d.items[0].volumeInfo, null, 'photo-vision');
-  } catch {}
+  } catch (e) { if (e instanceof RateLimitError) throw e; }
   return null;
+}
+
+// Look up a single book with exponential backoff on 429.
+// 4 attempts: wait 2^attempt × 1000 ms (capped at 16s) on each retry.
+async function pbLookupWithBackoff(b) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      let entry = null;
+      if (b.isbn && /\d{9,13}/.test(b.isbn)) entry = await pbFetchByIsbn(b.isbn);
+      if (!entry && b.title) entry = await pbFetchByTitle(b.title.replace(/\?$/,''), b.author);
+      return { entry };
+    } catch (err) {
+      if (err instanceof RateLimitError && attempt < 3) {
+        const wait = Math.min(16000, Math.pow(2, attempt) * 1000);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      if (err instanceof RateLimitError) return { rateLimited: true };
+      throw err;
+    }
+  }
+  return { rateLimited: true };
 }
 
 // ── Entry Parsers ─────────────────────────────────────────────────────────
@@ -3210,8 +3319,9 @@ async function callVisionAPI(imageFile, prompt) {
     r.readAsDataURL(imageFile);
   });
   const mediaType = imageFile.type || 'image/jpeg';
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    owner: 'photo-batch-modal',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': key,
@@ -3435,7 +3545,7 @@ async function doiLookup() {
 }
 
 async function crossRefLookup(doi) {
-  const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+  const r = await fetchWithTimeout(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
   if (!r.ok) throw new Error('Not found in CrossRef');
   const j = await r.json();
   return j.message;
@@ -3509,7 +3619,7 @@ async function isbnLookup() {
 }
 
 async function openLibraryByIsbn(isbn) {
-  const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+  const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
   if (!r.ok) throw new Error('Open Library HTTP ' + r.status);
   const j = await r.json();
   const key = Object.keys(j)[0];
@@ -3556,7 +3666,7 @@ async function googleBooksIsbnLookup() {
 }
 
 async function googleBooksIsbn(isbn) {
-  const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
+  const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
   if (!r.ok) throw new Error('Google Books HTTP '+r.status);
   const j = await r.json();
   if (!j.items?.length) throw new Error('Not found in Google Books');
@@ -3572,7 +3682,7 @@ async function titleSearchOpenLibrary() {
   setFetchStatus('title','Searching Open Library…');
   try {
     const q = encodeURIComponent(title + (author?' '+author:''));
-    const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=key,title,author_name,first_publish_year,publisher,isbn,subject,lcc`);
     if (!r.ok) throw new Error('Open Library HTTP '+r.status);
     const j = await r.json();
     if (!j.docs?.length) throw new Error('No results');
@@ -3610,7 +3720,7 @@ async function titleSearchGoogleBooks() {
   setFetchStatus('title','Searching Google Books…');
   try {
     const q = 'intitle:'+encodeURIComponent(title)+(author?'+inauthor:'+encodeURIComponent(author):'');
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
     if (!r.ok) throw new Error('Google Books HTTP '+r.status);
     const j = await r.json();
     if (!j.items?.length) throw new Error('No results');
@@ -3785,43 +3895,78 @@ async function autoLoadLibrary() {
   const pb = document.getElementById('progress-bar');
   pb.style.display = 'block'; pb.style.width = '20%';
 
+  // Distinct phases so we can categorize errors precisely.
+  let text;
   try {
-    const response = await fetch(path, { cache: 'no-cache' });
-
+    const response = await fetchWithTimeout(path, { cache: 'no-cache', owner: 'autoload' });
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} — file not found at ${path}`);
+      const httpErr = new Error(`HTTP ${response.status}`);
+      httpErr.kind = 'network';
+      httpErr.status = response.status;
+      throw httpErr;
     }
-
     pb.style.width = '60%';
-    const text = await response.text();
+    text = await response.text();
     pb.style.width = '80%';
-
-    entries = parseBibTeX(text);
-    pb.style.width = '95%';
-
-    selected = null; editing = null;
-    showLibrary();
-    buildSidebarFilters();
-    runFilter();
-    document.getElementById('btn-export').disabled = false;
-
-    // Success state
+  } catch (err) {
     spinner.style.display = 'none';
+    statusEl.classList.add('fail');
+    const reason = err.status ? `HTTP ${err.status}` : 'network unreachable';
+    msgEl.innerHTML = `Could not reach <span class="autoload-path">${label}</span> — ${reason}`;
+    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
+    toast('Could not reach library URL — check your connection or URL.', 'error');
+    console.warn(`BibForge auto-load network failure for "${path}":`, err);
+    pb.style.width = '100%';
+    setTimeout(() => { pb.style.display = 'none'; pb.style.width = '0%'; }, 500);
+    return;
+  }
+
+  // Parse phase — separate error path with skipped-entry count.
+  let parsed, skipped = 0;
+  try {
+    const expected = (text.match(/@[A-Za-z]+\s*[{(]/g) || []).length;
+    parsed = parseBibTeX(text);
+    skipped = Math.max(0, expected - parsed.length);
+  } catch (err) {
+    spinner.style.display = 'none';
+    statusEl.classList.add('fail');
+    msgEl.innerHTML = `Could not parse <span class="autoload-path">${label}</span>`;
+    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
+    toast(`Library loaded but contains errors — ${err.message}`, 'error');
+    console.warn(`BibForge auto-load parse failure for "${path}":`, err);
+    pb.style.width = '100%';
+    setTimeout(() => { pb.style.display = 'none'; pb.style.width = '0%'; }, 500);
+    return;
+  }
+
+  entries = parsed;
+  pb.style.width = '95%';
+
+  selected = null; editing = null;
+  showLibrary();
+  buildSidebarFilters();
+  runFilter();
+  document.getElementById('btn-export').disabled = false;
+
+  spinner.style.display = 'none';
+
+  if (entries.length === 0) {
+    // Empty result — render an empty-state, not a silent no-op.
+    statusEl.classList.add('fail');
+    msgEl.innerHTML = `No entries found at <span class="autoload-path">${label}</span>`;
+    subEl.innerHTML = `The file was reachable but contained no usable BibTeX entries. <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    toast('No entries found at that URL.', 'info');
+  } else if (skipped > 0) {
+    // Partial parse — flag it.
+    statusEl.classList.add('ok');
+    msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span> · <span style="color:var(--amber)">${skipped} skipped</span>`;
+    subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
+    toast(`Library loaded but contains errors — ${skipped} entr${skipped===1?'y':'ies'} skipped.`, 'error');
+  } else {
     statusEl.classList.add('ok');
     msgEl.innerHTML = `✓ Loaded <strong>${entries.length.toLocaleString()}</strong> entries from <span class="autoload-path">${label}</span>`;
     subEl.innerHTML = `Auto-loaded from <span class="autoload-path">${path}</span> · <span style="cursor:pointer;text-decoration:underline" onclick="triggerImport()">load a different file</span>`;
-
     toast(`Auto-loaded ${entries.length.toLocaleString()} entries from ${label}.`, 'success');
-
-  } catch (err) {
-    // Graceful fallback — show manual import screen as normal
-    spinner.style.display = 'none';
-    statusEl.classList.add('fail');
-    msgEl.innerHTML = `Could not auto-load <span class="autoload-path">${label}</span> — ${err.message.includes('HTTP') ? err.message : 'file not found or path incorrect'}`;
-    subEl.textContent = 'Or start fresh and add entries manually via DOI lookup';
-
-    console.warn(`BibForge auto-load: could not fetch "${path}". ` +
-      `Check BIBFORGE_CONFIG.autoLoad in the script. Error: ${err.message}`);
   }
 
   pb.style.width = '100%';
@@ -3832,6 +3977,9 @@ async function autoLoadLibrary() {
 //  FILE IMPORT / EXPORT
 // ════════════════════════════════════════════════════
 function triggerImport() {
+  // If autoload is mid-fetch and the user is overriding with a manual file,
+  // cancel the in-flight request so its handler doesn't clobber state later.
+  abortModalFetches('autoload');
   document.getElementById('file-input').click();
 }
 
@@ -4196,7 +4344,126 @@ function exportBib() {
 //  MODAL HELPERS
 // ════════════════════════════════════════════════════
 function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // When a modal closes mid-flight, abort any owned fetch so its handler
+  // doesn't fire after the user has moved on.
+  abortModalFetches(id);
+}
+
+// ════════════════════════════════════════════════════
+//  USER SETTINGS — fetch timeout + photo batch concurrency
+// ════════════════════════════════════════════════════
+const SETTINGS_DEFAULTS = { fetchTimeout: 15000, photoConcurrency: 3 };
+
+function getFetchTimeout() {
+  const raw = parseInt(localStorage.getItem('bf-fetch-timeout'), 10);
+  if (!Number.isFinite(raw) || raw < 3000 || raw > 60000) return SETTINGS_DEFAULTS.fetchTimeout;
+  return raw;
+}
+function saveFetchTimeout(v) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n) || n < 3000 || n > 60000) return;
+  localStorage.setItem('bf-fetch-timeout', String(n));
+}
+function resetFetchTimeout() {
+  localStorage.removeItem('bf-fetch-timeout');
+  const el = document.getElementById('set-fetch-timeout');
+  if (el) el.value = SETTINGS_DEFAULTS.fetchTimeout;
+}
+
+function getPhotoConcurrency() {
+  const raw = parseInt(localStorage.getItem('bf-photo-concurrency'), 10);
+  if (!Number.isFinite(raw) || raw < 1 || raw > 6) return SETTINGS_DEFAULTS.photoConcurrency;
+  return raw;
+}
+function savePhotoConcurrency(v) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 6) return;
+  localStorage.setItem('bf-photo-concurrency', String(n));
+}
+function resetPhotoConcurrency() {
+  localStorage.removeItem('bf-photo-concurrency');
+  const el = document.getElementById('set-photo-concurrency');
+  if (el) el.value = SETTINGS_DEFAULTS.photoConcurrency;
+}
+
+function openSettings() {
+  document.getElementById('set-fetch-timeout').value = getFetchTimeout();
+  document.getElementById('set-photo-concurrency').value = getPhotoConcurrency();
+  openModal('settings-modal');
+}
+
+// ════════════════════════════════════════════════════
+//  FETCH WITH TIMEOUT + ABORT CONTROLLER REGISTRY
+// ════════════════════════════════════════════════════
+// Two parallel tracking mechanisms:
+//   1. Named module-level controllers for the two long-running flows
+//      (Photo Batch, auto-load) — easy to introspect / abort imperatively.
+//   2. An owner-keyed registry of every in-flight controller so closing a
+//      modal can abort *all* fetches it started, including transient ones.
+let currentAutoloadController = null;
+let currentPhotoBatchController = null;
+
+const _abortRegistry = new Map(); // owner -> Set<AbortController>
+
+function registerAbort(owner, controller) {
+  if (!owner) return;
+  let set = _abortRegistry.get(owner);
+  if (!set) { set = new Set(); _abortRegistry.set(owner, set); }
+  set.add(controller);
+}
+function unregisterAbort(owner, controller) {
+  const set = _abortRegistry.get(owner);
+  if (set) { set.delete(controller); if (set.size === 0) _abortRegistry.delete(owner); }
+}
+function abortModalFetches(owner) {
+  const set = _abortRegistry.get(owner);
+  if (set) {
+    for (const c of set) { try { c.abort(); } catch {} }
+    _abortRegistry.delete(owner);
+  }
+  if (owner === 'photo-batch-modal' && currentPhotoBatchController) {
+    try { currentPhotoBatchController.abort(); } catch {}
+    currentPhotoBatchController = null;
+  }
+  if (owner === 'autoload' && currentAutoloadController) {
+    try { currentAutoloadController.abort(); } catch {}
+    currentAutoloadController = null;
+  }
+}
+
+// Abort all in-flight requests when the page unloads — keeps phantom
+// callbacks from firing during teardown.
+window.addEventListener('beforeunload', () => {
+  for (const set of _abortRegistry.values()) {
+    for (const c of set) { try { c.abort(); } catch {} }
+  }
+  _abortRegistry.clear();
+});
+
+async function fetchWithTimeout(url, options = {}) {
+  const { owner, signal: externalSignal, timeout, ...rest } = options;
+  const ms = Number.isFinite(timeout) ? timeout : getFetchTimeout();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException('Request timed out', 'TimeoutError')), ms);
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort(externalSignal.reason);
+    else externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+  }
+  if (owner) registerAbort(owner, controller);
+  // Track the most recently issued controller per long-running flow.
+  if (owner === 'autoload') currentAutoloadController = controller;
+  if (owner === 'photo-batch-modal') currentPhotoBatchController = controller;
+  try {
+    return await fetch(url, { ...rest, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+    if (owner) unregisterAbort(owner, controller);
+    if (owner === 'autoload' && currentAutoloadController === controller) currentAutoloadController = null;
+    if (owner === 'photo-batch-modal' && currentPhotoBatchController === controller) currentPhotoBatchController = null;
+  }
+}
 
 // ════════════════════════════════════════════════════
 //  TOAST
@@ -4303,7 +4570,7 @@ async function fetchAeaTree() {
 
   setStatus('fetching AEA tree…');
   try {
-    const r = await fetch('https://www.aeaweb.org/econlit/classificationTree.xml', {
+    const r = await fetchWithTimeout('https://www.aeaweb.org/econlit/classificationTree.xml', {
       mode: 'cors', cache: 'force-cache'
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
