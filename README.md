@@ -1,6 +1,6 @@
 # BibForge
 
-![Version](https://img.shields.io/github/v/tag/davidbieri/bibforge?label=version&style=flat-square&color=c8973a)
+![Version](https://img.shields.io/github/v/tag/david-bieri/bibforge?label=version&style=flat-square&color=c8973a)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-5a9a6e?style=flat-square)
 ![Deploy](https://img.shields.io/badge/deploy-GitHub%20Pages-5b8fa8?style=flat-square)
 
