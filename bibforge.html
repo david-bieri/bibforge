@@ -3200,6 +3200,9 @@ async function extractBarcodeFromImage(file) {
   });
 }
 
+// Claude API model, set once (bieri-ai webdev:claude-api-client); the README names the same ID.
+const CLAUDE_MODEL = 'claude-sonnet-5-5';
+
 async function callVisionAPI(imageFile, prompt) {
   const key = getApiKey();
   if (!key) throw new Error('No API key set');
@@ -3219,7 +3222,7 @@ async function callVisionAPI(imageFile, prompt) {
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 1024,
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 }},
@@ -4964,7 +4967,7 @@ function renderInsightsAuthors() {
   entries.forEach(e => {
     const a = fmt(e,'author') || fmt(e,'editor'); if (!a) return;
     a.split(/\s+and\s+/i).forEach(p => {
-      const sn = p.split(',')[0].trim().replace(/[{}\]/g,'');
+      const sn = p.split(',')[0].trim().replace(/[{}\\]/g,'');
       if (sn.length > 1) authorCount[sn] = (authorCount[sn]||0) + 1;
     });
   });

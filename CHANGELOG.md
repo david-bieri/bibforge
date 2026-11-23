@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.1] — 2026-11-23
+
+### Fixed
+- **The app's script did not run at all since 31 March 2026.** A regular expression in the author statistics (`/[{}\]/g`) never closed its character class, so the browser rejected the whole script block. It is now `/[{}\\]/g` (strip braces and backslashes from surnames).
+- Claude Vision calls used `claude-sonnet-4-20250514`, retired by Anthropic on 15 Jun 2026. Model is now `claude-sonnet-5-5`, set once in `CLAUDE_MODEL`.
+
+### Known
+- `BIBFORGE_CONFIG.autoLoad` points to `/data/library.bib`, which is not in the repo; the app falls back to the import screen as designed.
+
 ## [v1.3] — May 2026
 
 ### Added
