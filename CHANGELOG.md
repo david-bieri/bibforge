@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.2] — 2026-11-24
+
+### Changed
+- Auto-load now reads `bib/library.bib` (relative to the page). It used to point at `/data/library.bib`, which was not in the repo, so every visit showed an auto-load failure before the import screen.
+- `bib/library.bib` is a starter library: Bieri (ed.), *August Lösch – Briefe / Letters* (Metropolis, 2026) and Lösch, "Geographie des Zinses", *Die Bank* 33 (1940). UTF-8, so accents display as written.
+
+---
+
 ## [v1.3.1] — 2026-11-23
 
 ### Fixed
@@ -12,7 +20,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Claude Vision calls used `claude-sonnet-4-20250514`, retired by Anthropic on 15 Jun 2026. Model is now `claude-sonnet-5-5`, set once in `CLAUDE_MODEL`.
 
 ### Known
-- `BIBFORGE_CONFIG.autoLoad` points to `/data/library.bib`, which is not in the repo; the app falls back to the import screen as designed.
+- `BIBFORGE_CONFIG.autoLoad` points to `/data/library.bib`, which is not in the repo; the app falls back to the import screen as designed (fixed in v1.3.2).
+
+---
 
 ## [v1.3] — May 2026
 

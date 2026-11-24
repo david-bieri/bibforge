@@ -81,8 +81,9 @@ No dependencies to install. No build process. No server required.
 your-repo/
 ├── index.html           ← landing_v1.html renamed (optional)
 ├── bibforge.html        ← the app
-├── data/
-│   └── library.bib      ← auto-loaded on startup
+├── bib/
+│   ├── library.bib      ← auto-loaded on startup (starter: two entries)
+│   └── overlord.bib     ← master bibliography (not auto-loaded)
 ├── README.md
 └── CHANGELOG.md
 ```
@@ -287,7 +288,7 @@ Configure `BIBFORGE_CONFIG.autoLoad` to a repo-relative path and the library fet
 
 ```javascript
 const BIBFORGE_CONFIG = {
-  autoLoad: '/data/library.bib',   // path relative to repo root
+  autoLoad: 'bib/library.bib',     // path relative to bibforge.html (no leading slash)
   autoLoadLabel: 'library.bib',    // display name shown in the UI
 };
 ```
@@ -298,7 +299,7 @@ Set `autoLoad: null` to disable. On startup BibForge issues a `fetch()` to the c
 
 1. Open BibForge — library loads automatically from the repo
 2. Browse, add entries, fetch metadata, classify, run Insights
-3. Click **Export .bib** — save the file back to `data/library.bib` locally
+3. Click **Export .bib** — save the file back to `bib/library.bib` locally
 4. Commit and push — the updated library is live on the next page load
 
 ---
